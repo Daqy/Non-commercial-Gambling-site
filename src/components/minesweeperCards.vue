@@ -8,7 +8,7 @@
     <div v-for="game in gameList" class="gameContainer">
       <div class="game">
         <div class="gridContainer">
-          <div v-on:click="mineClick(grid, game.bombLocation)" v-for="grid in game.grid.size" class="grid" v-bind:id="grid"></div>
+          <div v-on:click="mineClick($event, game)" v-for="grid in game.grid.size" class="grid" v-bind:id="game.gameIdentifier + grid"></div>
         </div>
       </div>
       <div class="infoContainer">
@@ -25,14 +25,35 @@
 export default {
   name: 'minesweeperCards',
   methods: {
-    mineClick: function (id, bombLocation) {
-      for (let bombCheckLoop = 0; bombCheckLoop < bombLocation.length; bombCheckLoop++) {
-        if (id == bombLocation[bombCheckLoop]) {
-          document.getElementById(id).style.background = "#FA5252";
-          return;
+    mineClick: function (event, game) {
+      if (game.gameState == "Cash Out") {
+        for (let bombCheckLoop = 0; bombCheckLoop < game.bombLocation.length; bombCheckLoop++) {
+          if ((event.currentTarget.id).toString() == (game.gameIdentifier+game.bombLocation[bombCheckLoop]).toString()) {
+            document.getElementById(game.gameIdentifier+game.bombLocation[0]).style.background = "#FA5252";
+            document.getElementById(game.gameIdentifier+game.bombLocation[1]).style.background = "#FA5252";
+            document.getElementById(game.gameIdentifier+game.bombLocation[2]).style.background = "#FA5252";
+            game.gameState = "Defeat!"
+            return;
+          }
+        }
+        document.getElementById(event.currentTarget.id).style.background = "#40C057";
+        this.boardStateCheck(game);
+        return;
+      }
+      return;
+    },
+    boardStateCheck: function (game) {
+      let clearedCount = 0;
+      for (let gridFinishedLoop = 1; gridFinishedLoop < game.grid.size+1; gridFinishedLoop++) {
+        if (document.getElementById(game.gameIdentifier+gridFinishedLoop.toString()).style.background.includes("rgb(64, 192, 87)")) {
+          clearedCount++;
         }
       }
-      document.getElementById(id).style.background = "#40C057";
+      if (clearedCount == 25-game.numberOfBombs) {
+        game.gameState = "Cashed Out";
+        console.log("user has won");
+        return;
+      }
       return;
     }
   },
@@ -40,6 +61,7 @@ export default {
     return {
       gameList: [
         {
+          gameIdentifier: "a",
           grid: {size: 25},
           numberOfBombs: 3,
           bombLocation: [17,9,24],
@@ -50,18 +72,15 @@ export default {
         }
         // ,
         // {
+        //   gameIdentifier: "b",
         //   grid: {size: 25},
         //   numberOfBombs: 3,
-        //   bombLocation: [
-        //     {x: 2,y: 4},
-        //     {x: 4,y: 2},
-        //     {x: 5,y: 4}
-        //   ],
+        //   bombLocation: [5,10,20],
         //   nextReward: 354,
         //   totalStake: 7537,
-        //   gameState: "Cashed Out",
+        //   gameState: "Cash Out",
         //   gameLog: []
-        // },
+        // }
         // {
         //   grid: {size: 25},
         //   numberOfBombs: 3,
