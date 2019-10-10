@@ -3,7 +3,16 @@
     <div class="gameCreation">
       <div class="balanceContainer"></div>
       <div class="icreaseContainer"></div>
-      <div class="gameSizeContainer"></div>
+      <div class="gameSizeContainer">
+        <div class="moneyContainer"><p>{{ gameCurrenySet }}</p></div>
+        <div class="bombMultiplierContainer">
+          <div class=""><h2>x1</h2></div>
+          <div class="activeMultiplier"><h2>x3</h2></div>
+          <div class=""><h2>x5</h2></div>
+          <div class=""><h2>x24</h2></div>
+        </div>
+        <div class="createGame" v-on:click="createGameClick()"><h2>Play</h2></div>
+      </div>
     </div>
     <div v-for="game in gameList" class="gameContainer">
       <div class="game">
@@ -55,46 +64,40 @@ export default {
         return;
       }
       return;
+    },
+    createGameClick: function() {
+      let newBombLocation = [];
+      for (let i = 0; i < 3; i++) {
+        newBombLocation.push(this.getRandomInt(25, newBombLocation)+1);
+      }
+      this.gameList.push({
+        gameIdentifier: '_' + Math.random().toString(36).substr(2, 9),
+        grid: {size: 25},
+        numberOfBombs: parseInt(document.getElementsByClassName("activeMultiplier")[0].textContent.split("x")[1]),
+        bombLocation: [newBombLocation[0], newBombLocation[1], newBombLocation[2]],
+        nextReward: 354,
+        totalStake: 7537,
+        gameState: "Cash Out",
+        gameLog: []
+      });
+    },
+    getRandomInt: function(max, bombLocation) {
+      if (bombLocation.length == 0) {
+        return Math.floor(Math.random() * Math.floor(max));
+      }
+      let rdnNum = Math.floor(Math.random() * Math.floor(max));
+      for (let existingNumLoop = 0; existingNumLoop < bombLocation.length; existingNumLoop++) {
+        if (bombLocation[existingNumLoop] == rdnNum) {
+          return getRandomInt(max, bombLocation);
+        }
+      }
+      return Math.floor(Math.random() * Math.floor(max));
     }
   },
   data() {
     return {
-      gameList: [
-        {
-          gameIdentifier: "a",
-          grid: {size: 25},
-          numberOfBombs: 3,
-          bombLocation: [17,9,24],
-          nextReward: 354,
-          totalStake: 7537,
-          gameState: "Cash Out",
-          gameLog: []
-        }
-        // ,
-        // {
-        //   gameIdentifier: "b",
-        //   grid: {size: 25},
-        //   numberOfBombs: 3,
-        //   bombLocation: [5,10,20],
-        //   nextReward: 354,
-        //   totalStake: 7537,
-        //   gameState: "Cash Out",
-        //   gameLog: []
-        // }
-        // {
-        //   grid: {size: 25},
-        //   numberOfBombs: 3,
-        //   bombLocation: [
-        //     {x: 2,y: 4},
-        //     {x: 4,y: 2},
-        //     {x: 5,y: 4}
-        //   ],
-        //   nextReward: 354,
-        //   totalStake: 7537,
-        //   gameState: "defeat",
-        //   gameLog: []
-        // }
-      ]
+      gameCurrenySet: 8000,
+      gameList: []
     }
   }
 }
@@ -105,8 +108,8 @@ export default {
   .main {
     width: 80vw;
     float: right;
-    height: 100vw;
-    //height: auto;
+    //height: 100vw;
+    height: auto;
   }
 
   .gridContainer {
@@ -116,6 +119,56 @@ export default {
     grid-template-columns: repeat(5, auto);
     grid-template-rows: repeat(5, auto);
     grid-gap: 10px 10px;
+  }
+
+  .gameCreation {
+    height: 200px;
+    width: 972px;
+    display: inline-grid;
+    grid-template-columns: repeat(3, 264px);
+    grid-template-rows: repeat(3, 198px);
+    grid-gap: 30px 30px;
+    justify-content: center;
+
+    div {
+      background-color: #2D3237;
+    }
+
+    .gameSizeContainer {
+      text-alignt: center;
+      display: grid;
+      color: white;
+      grid-template-columns: repeat(1, 100%);
+      grid-template-rows: repeat(3, 33.33%);
+      grid-gap: 0px 0px;
+
+      .bombMultiplierContainer {
+        display: grid;
+        grid-template-columns: repeat(4, 25%);
+        grid-template-rows: repeat(1, 100%);
+        grid-gap: 0px 0px;
+
+        div {
+          background-color: #ADB5BD;
+        }
+        .activeMultiplier {
+          background-color: #0068D1;
+        }
+      }
+
+      .createGame {
+        background-color: #005EBD;
+      }
+
+      div {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      div h2 {
+        text-align: center;
+      }
+    }
   }
 
   .grid {
