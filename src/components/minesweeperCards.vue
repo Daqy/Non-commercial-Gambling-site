@@ -6,10 +6,10 @@
       <div class="gameSizeContainer">
         <div class="moneyContainer"><p>{{ gameCurrenySet }}</p></div>
         <div class="bombMultiplierContainer">
-          <div class=""><h2>x1</h2></div>
-          <div class="activeMultiplier"><h2>x3</h2></div>
-          <div class=""><h2>x5</h2></div>
-          <div class=""><h2>x24</h2></div>
+          <div v-on:click="changeActiveClick($event)" class=""><h2>x1</h2></div>
+          <div v-on:click="changeActiveClick($event)" class="activeMultiplier"><h2>x3</h2></div>
+          <div v-on:click="changeActiveClick($event)" class=""><h2>x5</h2></div>
+          <div v-on:click="changeActiveClick($event)" class=""><h2>x24</h2></div>
         </div>
         <div class="createGame" v-on:click="createGameClick()"><h2>Play</h2></div>
       </div>
@@ -38,9 +38,9 @@ export default {
       if (game.gameState == "Cash Out") {
         for (let bombCheckLoop = 0; bombCheckLoop < game.bombLocation.length; bombCheckLoop++) {
           if ((event.currentTarget.id).toString() == (game.gameIdentifier+game.bombLocation[bombCheckLoop]).toString()) {
-            document.getElementById(game.gameIdentifier+game.bombLocation[0]).style.background = "#FA5252";
-            document.getElementById(game.gameIdentifier+game.bombLocation[1]).style.background = "#FA5252";
-            document.getElementById(game.gameIdentifier+game.bombLocation[2]).style.background = "#FA5252";
+            for (let bombColorLoop = 0; bombColorLoop < game.bombLocation.length; bombColorLoop++) {
+              document.getElementById(game.gameIdentifier+game.bombLocation[bombColorLoop]).style.background = "#FA5252";
+            }
             game.gameState = "Defeat!"
             return;
           }
@@ -67,31 +67,47 @@ export default {
     },
     createGameClick: function() {
       let newBombLocation = [];
-      for (let i = 0; i < 3; i++) {
-        newBombLocation.push(this.getRandomInt(25, newBombLocation)+1);
-      }
+      let numBomb = (parseInt(document.getElementsByClassName("activeMultiplier")[0].textContent.split("x")[1]));
+
+      this.add(newBombLocation, true, numBomb);
+      this.add(newBombLocation, false, 25-numBomb);
+
+      newBombLocation = this.mapping(this.shuffle(newBombLocation));
+
       this.gameList.push({
         gameIdentifier: '_' + Math.random().toString(36).substr(2, 9),
         grid: {size: 25},
         numberOfBombs: parseInt(document.getElementsByClassName("activeMultiplier")[0].textContent.split("x")[1]),
-        bombLocation: [newBombLocation[0], newBombLocation[1], newBombLocation[2]],
+        bombLocation: newBombLocation,
         nextReward: 354,
         totalStake: 7537,
         gameState: "Cash Out",
         gameLog: []
       });
     },
-    getRandomInt: function(max, bombLocation) {
-      if (bombLocation.length == 0) {
-        return Math.floor(Math.random() * Math.floor(max));
+    shuffle: function(array) {
+      for (let arrayIndex = 0; arrayIndex < array.length-1; arrayIndex++) {
+        const rdnIndex = Math.floor(Math.random() * (array.length-1 - 0 + 1)) + 0;
+        [array[arrayIndex], array[rdnIndex]] = [array[rdnIndex], array[arrayIndex]];
       }
-      let rdnNum = Math.floor(Math.random() * Math.floor(max));
-      for (let existingNumLoop = 0; existingNumLoop < bombLocation.length; existingNumLoop++) {
-        if (bombLocation[existingNumLoop] == rdnNum) {
-          return getRandomInt(max, bombLocation);
-        }
+      return array;
+    },
+    mapping: function(array) {
+      return array.map((element, index) => ({index, element})).filter((element, index) => (element.element)).map((element, index) => (element.index)).map((element, index) => (element+1));
+    },
+    add: function(array, element, times) {
+      for (let index = 0; index < times; ++index) {
+        array.push(element);
       }
-      return Math.floor(Math.random() * Math.floor(max));
+    },
+    changeActiveClick: function(event) {
+      document.getElementsByClassName("activeMultiplier")[0].classList.remove("activeMultiplier");
+      if (event.originalTarget.nodeName == "DIV") {
+        event.originalTarget.classList.add("activeMultiplier")
+      } else {
+        event.originalTarget.parentNode.classList.add("activeMultiplier")
+
+      }
     }
   },
   data() {
