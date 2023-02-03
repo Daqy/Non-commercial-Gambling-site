@@ -1,7 +1,24 @@
-# NON-COMMERCIAL-GAMBLING-SITE
+# just-bet
 
-## preview
+## Project setup
+```
+npm install
+```
 
-![PICTURE 1](https://github.com/Daqy/Non-commercial-Gambling-site/blob/master/preview/Screenshot%202023-01-25%20at%2015.33.39.png)
-![PICTURE 2](https://github.com/Daqy/Non-commercial-Gambling-site/blob/master/preview/Screenshot%202023-01-25%20at%2015.33.49.png)
-![PICTURE 3](https://github.com/Daqy/Non-commercial-Gambling-site/blob/master/preview/Screenshot%202023-01-25%20at%2015.34.34.png)
+### Compiles and hot-reloads for development
+```
+npm run serve
+```
+
+### Compiles and minifies for production
+```
+npm run build
+```
+
+### Lints and fixes files
+```
+npm run lint
+```
+
+### Customize configuration
+See [Configuration Reference](https://cli.vuejs.org/config/).
