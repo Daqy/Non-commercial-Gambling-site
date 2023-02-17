@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { defineProps, toRefs } from "vue";
-const props = defineProps({
-  fill: String,
+import { defineProps } from "vue";
+defineProps({
+  fill: { type: String, default: "#ffffff" },
 });
-
-const { fill } = toRefs(props);
 </script>
 
 <template>

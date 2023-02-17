@@ -1,13 +1,3 @@
-<script setup lang="ts">
-import { defineProps, toRefs } from "vue";
-const props = defineProps({
-  mainColour: String,
-  secondaryColour: String,
-});
-
-const { mainColour, secondaryColour } = toRefs(props);
-</script>
-
 <template>
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1258.9 1258.9">
     <g id="x">
@@ -79,17 +69,29 @@ const { mainColour, secondaryColour } = toRefs(props);
   </svg>
 </template>
 
+<script setup lang="ts">
+import { defineProps } from "vue";
+defineProps({
+  mainFill: { type: String, default: "var(--color-hightlight-green)" },
+  secondaryFill: {
+    type: String,
+    default: "var(--color-hightlight-darker-green)",
+  },
+});
+</script>
+
 <style>
+/* v-bind(mainColour); */
 .y {
-  stroke: v-bind(mainColour);
+  stroke: v-bind(secondaryFill);
   stroke-miterlimit: 10;
 }
 .y,
 .a {
-  fill: v-bind(mainColour);
+  fill: v-bind(secondaryFill);
 }
 
 .ab {
-  fill: v-bind(secondaryColour);
+  fill: v-bind(mainFill);
 }
 </style>

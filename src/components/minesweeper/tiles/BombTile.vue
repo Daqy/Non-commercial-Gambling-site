@@ -1,35 +1,55 @@
-<script setup lang="ts">
-import BombSVG from "./BombSVG.vue";
+<script lang="ts" setup>
+import IconMinesweeper from "@/components/icons/IconMinesweeper.vue";
+import { computed } from "@vue/runtime-core";
+import { inject } from "vue";
+
+const _state = inject("states");
+
+const props = defineProps({
+  state: String,
+});
+
+const isLosingState = computed(() => {
+  return props.state == _state.LOST;
+});
+
+const computedBackground = computed(() => {
+  if (isLosingState.value)
+    return "background-color: var(--color-bomb-background)";
+  return "";
+});
 </script>
 
 <template>
-  <div class="mineTileContainer">
-    <div class="svgContainer">
-      <BombSVG :fill="'#ffffff'" />
-    </div>
+  <div
+    class="card"
+    :class="{ winner: !isLosingState }"
+    :style="computedBackground"
+  >
+    <IconMinesweeper />
   </div>
 </template>
 
 <style lang="scss" scoped>
-.mineTileContainer {
-  position: relative;
-  background-color: #d81239;
+.winner::after {
+  content: "";
+  width: 100%;
+  height: 100%;
+  background-color: black;
+  opacity: 0.4;
+  position: absolute;
+}
+.card {
   width: 100%;
   height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  animation: shake 0.5s;
-  animation-iteration-count: 2;
+  animation: shake 0.5s 2;
 
-  /* &::before {
-    content: "";
-    position: absolute;
-    width: 150%;
-    height: 100%;
-    transform: rotate(45deg) translate(0%, 50%);
-    background-color: #c80a36;
-  } */
+  svg {
+    width: 50%;
+  }
 }
 
 @keyframes shake {
@@ -66,10 +86,5 @@ import BombSVG from "./BombSVG.vue";
   100% {
     transform: translate(1px, -2px) rotate(-1deg);
   }
-}
-
-.svgContainer {
-  width: 50%;
-  height: 50%;
 }
 </style>

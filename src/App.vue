@@ -1,39 +1,23 @@
 <script setup lang="ts">
-import WebpageTitle from "@/components/WebpageTitle.vue";
+import { RouterLink, RouterView } from "vue-router";
+import LogoTextComponent from "./components/LogoTextComponent.vue";
+import GameTemplate from "./components/GameTemplate.vue";
+import IconMinesweeper from "./components/icons/IconMinesweeper.vue";
 </script>
 
 <template>
-  <div>
-    <div class="navContainer">
-      <WebpageTitle />
-    </div>
-    <router-view />
+  <div class="viewableContent">
+    <LogoTextComponent title="Just Bet" />
+    <GameTemplate title="minesweeper" :icon="IconMinesweeper">
+      <RouterView />
+    </GameTemplate>
   </div>
 </template>
 
-<style lang="scss">
-body {
-  background-color: #131c2b;
-  margin: 0px;
-  padding: 0px;
-}
-
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  color: white;
-  height: 100vh;
-  width: 100vw;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.navContainer {
+<style scoped>
+.viewableContent {
   width: 60%;
   min-width: 1000px;
-  display: flex;
-  align-items: center;
+  max-width: 1300px;
 }
 </style>
