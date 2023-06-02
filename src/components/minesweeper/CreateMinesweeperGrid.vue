@@ -1,5 +1,9 @@
 <script lang="ts" setup>
 import { reactive, ref, inject, computed } from "vue";
+import { injectStrict } from "@/utils/injectTyped";
+import { AxiosKey } from "@/symbols";
+
+const axios = injectStrict(AxiosKey);
 
 const props = defineProps({
   state: { type: String, required: true },
@@ -17,12 +21,6 @@ function preventAlphaKey(event) {
   }
 }
 
-function truncate(value: number) {
-  if (value.toString().includes("."))
-    return Number(value.toString().slice(0, value.toString().indexOf(".") + 3));
-  return value;
-}
-
 function changeCurrentActive(id: number) {
   for (let multiplier of bombMultipliers.get) {
     multiplier.isActive = false;
@@ -30,8 +28,15 @@ function changeCurrentActive(id: number) {
   bombMultipliers.get[id].isActive = true;
 }
 
-function createGame() {
-  const balance = Number(localStorage.getItem("balance"));
+const userid = ref(localStorage.getItem("id"));
+
+async function createGame() {
+  let balance = 0;
+
+  await axios.get(`/api/get-balance?userid=${userid.value}`).then((res) => {
+    balance = res.data.balance;
+  });
+
   if (betAmount.value == undefined || betAmount.value == "") {
     console.log("enter bet");
     return;
@@ -104,7 +109,6 @@ const bombMultipliers = reactive({
         {{ multiplier.value }}
       </div>
     </div>
-    <!-- Next Click Reward: {{ truncate(props.nextClickReward) }} -->
     <button class="createGame" :disabled="gameIsOnGoing" @click="createGame">
       create game
     </button>

@@ -2,39 +2,85 @@
 import BombSVG from "../icons/IconMinesweeper.vue";
 import MouseClickSVG from "../icons/IconMouseClick.vue";
 import CoinSVG from "../icons/IconCoin.vue";
-import { computed, inject } from "vue";
+import { computed, inject, onMounted, ref, watch } from "vue";
+
+import { truncate } from "@/utils/truncate";
+import { injectStrict } from "@/utils/injectTyped";
+import { AxiosKey } from "@/symbols";
+
+const axios = injectStrict(AxiosKey);
 
 const _state = inject("states");
 const props = defineProps({
   state: { type: String, required: true },
-  cashEarnt: { type: Number, required: true },
-  stake: { type: Number, required: true },
-  bombCount: { type: Number, required: true },
-  nextClickReward: { type: Number, required: true },
+  gameid: { type: Number, required: true },
 });
 
-function truncate(value: number) {
-  if (value.toString().includes("."))
-    return Number(value.toString().slice(0, value.toString().indexOf(".") + 3));
-  return value;
-}
+const emit = defineEmits(["stateChange"]);
 
-const emit = defineEmits(["stateChange", "claimAmount"]);
+const userid = ref(localStorage.getItem("id"));
 
-function claimRewards() {
-  emit("stateChange", _state.CLAIMED);
-  emit("claimAmount");
-  const balance = Number(localStorage.getItem("balance"));
-  localStorage.setItem("balance", `${balance + props.cashEarnt}`);
-  window.dispatchEvent(
-    new CustomEvent("balance-local-storage-changed", {
-      detail: {
-        storage: Number(localStorage.getItem("balance")),
-      },
-    })
-  );
+watch(
+  () => props.gameid,
+  async () => {
+    await axios
+      .get(`/api/game/${props.gameid}/getBombCount?userid=${userid.value}`)
+      .then((res) => {
+        bombCount.value = res.data.bombCount;
+      });
+    await axios
+      .get(
+        `/api/game/${props.gameid}/getNextClickReward?userid=${userid.value}`
+      )
+      .then((res) => {
+        nextClickReward.value = res.data.clickReward;
+      });
+    await axios
+      .get(`/api/game/${props.gameid}/getStake?userid=${userid.value}`)
+      .then((res) => {
+        stake.value = res.data.stake;
+      });
+    await axios
+      .get(`/api/game/${props.gameid}/getPotential?userid=${userid.value}`)
+      .then((res) => {
+        potentialEarned.value = res.data.potential;
+      });
+  }
+);
 
-  // props.state = _state.CLAIMED;
+watch(
+  () => props.state,
+  async () => {
+    await axios
+      .get(`/api/game/${props.gameid}/getPotential?userid=${userid.value}`)
+      .then((res) => {
+        potentialEarned.value = res.data.potential;
+      });
+  }
+);
+
+async function claimRewards() {
+  await axios
+    .post(
+      `/api/game/${props.gameid}/updateState?userid=${userid.value}&state=${_state.CLAIMED}`
+    )
+    .then((res) => {
+      console.log(res.data);
+      emit("stateChange");
+    });
+  await axios
+    .post(
+      `/api/update-balance?userid=${userid.value}&balanceChange=${potentialEarned.value}`
+    )
+    .then((res) => {
+      window.dispatchEvent(
+        new CustomEvent("animate_balance_change", {
+          detail: {
+            balanceChange: potentialEarned.value,
+          },
+        })
+      );
+    });
 }
 
 const claimRewardsAvaliable = computed(() => {
@@ -49,9 +95,32 @@ const HasLostGame = computed(() => {
   return props.state == _state.LOST;
 });
 
-const showBombCount = computed(() => {
-  if (props.state == _state.LOST) return props.bombCount + 1;
-  return props.bombCount;
+const bombCount = ref(0);
+const nextClickReward = ref(0);
+const stake = ref(0);
+const potentialEarned = ref(0);
+
+onMounted(async () => {
+  await axios
+    .get(`/api/game/${props.gameid}/getBombCount?userid=${userid.value}`)
+    .then((res) => {
+      bombCount.value = res.data.bombCount;
+    });
+  await axios
+    .get(`/api/game/${props.gameid}/getNextClickReward?userid=${userid.value}`)
+    .then((res) => {
+      nextClickReward.value = res.data.clickReward;
+    });
+  await axios
+    .get(`/api/game/${props.gameid}/getStake?userid=${userid.value}`)
+    .then((res) => {
+      stake.value = res.data.stake;
+    });
+  await axios
+    .get(`/api/game/${props.gameid}/getPotential?userid=${userid.value}`)
+    .then((res) => {
+      potentialEarned.value = res.data.potential;
+    });
 });
 </script>
 
@@ -72,7 +141,7 @@ const showBombCount = computed(() => {
           <BombSVG fill="var(--color-text-subtle)" />
         </div>
         <div class="textContainer">
-          {{ showBombCount }}
+          {{ bombCount }}
         </div>
       </div>
       <div class="earnPerClick" title="Earn Per Click">
@@ -80,7 +149,7 @@ const showBombCount = computed(() => {
           <MouseClickSVG fill="var(--color-text-subtle)" />
         </div>
         <div class="textContainer">
-          {{ truncate(props.nextClickReward) }}
+          {{ truncate(nextClickReward, 3) }}
         </div>
       </div>
     </div>
@@ -90,13 +159,13 @@ const showBombCount = computed(() => {
       @click="claimRewards"
       v-if="claimRewardsAvaliable"
     >
-      claim ${{ truncate(cashEarnt) }}
+      claim ${{ truncate(potentialEarned, 3) }}
     </div>
     <div class="claimedRewards" v-if="hasClaimedRewards">
-      claimed: ${{ truncate(cashEarnt) }}
+      claimed: ${{ truncate(potentialEarned, 3) }}
     </div>
     <div class="lostRewards" v-if="HasLostGame">
-      you lost ${{ truncate(cashEarnt) }}
+      you lost ${{ truncate(potentialEarned, 3) }}
     </div>
   </div>
 </template>

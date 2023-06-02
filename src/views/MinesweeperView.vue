@@ -3,11 +3,20 @@ import MinesweeperGrid from "@/components/minesweeper/MinesweeperGrid.vue";
 import CreateSweeperGrid from "@/components/minesweeper/CreateMinesweeperGrid.vue";
 import ClaimSweeperRewards from "@/components/minesweeper/ClaimSweeperRewards.vue";
 import { reactive } from "@vue/reactivity";
-import { inject, ref } from "vue";
+import { inject, ref, onMounted } from "vue";
+
+import { injectStrict } from "@/utils/injectTyped";
+import { AxiosKey } from "@/symbols";
+
+const axios = injectStrict(AxiosKey);
 
 const _state = inject("states");
 
+const userid = ref(localStorage.getItem("id"));
+const currentGameId = ref(localStorage.getItem("gameid"));
+
 const sweeper = reactive({
+  id: 1523123,
   mine: Array.from(Array(0).keys())
     .map((value) => {
       return value + 1;
@@ -18,31 +27,37 @@ const sweeper = reactive({
   stake: 0,
 });
 
+onMounted(async () => {
+  if (currentGameId != undefined) {
+    await axios
+      .get(`/api/game/${currentGameId.value}?userid=${userid.value}`)
+      .then((res) => {
+        sweeper.id = Number(currentGameId.value);
+        sweeper.mine = res.data.bomb.location;
+        sweeper.gameState = res.data.state;
+        sweeper.stake = res.data.stake;
+      });
+  }
+});
+
 const resetGame = ref(false);
 
-function randomIntFromInterval(min, max) {
-  return Math.floor(Math.random() * (max - min + 1) + min);
-}
-
-function createGame(gameSettings: { betAmount: number; multiplier: number }) {
-  const usedValues: number[] = [];
-  // while(arr.length < 8){
-  //     var r = Math.floor(Math.random() * 100) + 1;
-  //     if(arr.indexOf(r) === -1) arr.push(r);
-  // }
-  sweeper.mine = Array.from(Array(gameSettings.multiplier).keys())
-    .map((value: number) => {
-      let newValue = randomIntFromInterval(1, 25);
-      while (usedValues.indexOf(newValue) != -1) {
-        newValue = randomIntFromInterval(1, 25);
-      }
-      usedValues.push(newValue);
-      return newValue;
-    })
-    .sort((a, b) => 0.5 - Math.random());
-  sweeper.gameState = _state.ONGOING;
-  sweeper.stake = gameSettings.betAmount;
-  resetGame.value = true;
+async function createGame(gameSettings: {
+  betAmount: number;
+  multiplier: number;
+}) {
+  await axios
+    .post(
+      `api/game?userid=${userid.value}&bombCount=${gameSettings.multiplier}&stake=${gameSettings.betAmount}`
+    )
+    .then((res) => {
+      sweeper.id = Number(res.data.game.id);
+      sweeper.mine = res.data.game.bomb.location;
+      sweeper.gameState = res.data.game.state;
+      sweeper.stake = res.data.game.stake;
+      resetGame.value = true;
+      localStorage.setItem("gameid", res.data.game.id);
+    });
 }
 
 const cashEarnt = ref(sweeper.stake);
@@ -57,8 +72,12 @@ function resetComplete() {
   resetGame.value = false;
 }
 
-function stateChange(newState: string) {
-  sweeper.gameState = newState;
+async function stateChange() {
+  await axios
+    .get(`/api/game/${sweeper.id}/getState?userid=${userid.value}`)
+    .then((res) => {
+      sweeper.gameState = res.data.state;
+    });
 }
 </script>
 
@@ -80,10 +99,7 @@ function stateChange(newState: string) {
         />
         <ClaimSweeperRewards
           :state="sweeper.gameState"
-          :cashEarnt="cashEarnt"
-          :stake="sweeper.stake"
-          :bombCount="sweeper.mine.length"
-          :nextClickReward="nextClick"
+          :gameid="sweeper.id"
           @stateChange="stateChange"
         />
       </div>

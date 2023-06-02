@@ -19,5 +19,8 @@ import IconMinesweeper from "./components/icons/IconMinesweeper.vue";
   width: 60%;
   min-width: 1000px;
   max-width: 1300px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 </style>

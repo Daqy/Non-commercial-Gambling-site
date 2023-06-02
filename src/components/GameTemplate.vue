@@ -1,74 +1,80 @@
 <script setup lang="ts">
+import { onMounted, inject } from "vue";
 import { ref } from "@vue/reactivity";
 import { computed, watch } from "@vue/runtime-core";
-import IconCoin from "./icons/IconCoin.vue"; // importing is easier too
+import IconCoin from "./icons/IconCoin.vue";
+
+import { truncate } from "@/utils/truncate";
+import { injectStrict } from "@/utils/injectTyped";
+import { AxiosKey } from "@/symbols";
+
+const axios = injectStrict(AxiosKey);
 
 const props = defineProps({
   icon: { type: null, required: true },
   title: { type: String, required: true },
 });
 
-function truncate(value: number) {
-  if (value.toString().includes("."))
-    return Number(value.toString().slice(0, value.toString().indexOf(".")));
-  return value;
+const userid = ref(0);
+const balance = ref(0);
+const username = ref("undefined");
+
+async function getUserInfo() {
+  await axios.get(`/api/get-balance?userid=${userid.value}`).then((res) => {
+    balance.value = res.data.balance;
+  });
+  await axios.get(`/api/get-username?userid=${userid.value}`).then((res) => {
+    username.value = res.data.username;
+  });
 }
 
-// let balance = Number(localStorage.getItem("balance"));
-// let balance = ref(Number(localStorage.getItem("balance")));
-
-if (localStorage.getItem("balance") == null) {
-  localStorage.setItem("balance", "1000");
-}
-const balance = ref(Number(localStorage.getItem("balance")));
-
-//here you can see me use, props, slots and just refs
-// const balance = ref(10000);
-
-watch(balance, (newBalance) => {
-  console.log(newBalance);
+onMounted(async () => {
+  if (localStorage.getItem("id") == undefined) {
+    let username = prompt("Please enter your name");
+    await axios.post(`/api/user?username=${username}`).then((res) => {
+      userid.value = res.data.userid;
+      localStorage.setItem("id", res.data.userid);
+      getUserInfo();
+    });
+  } else {
+    userid.value = localStorage.getItem("id");
+    getUserInfo();
+  }
 });
-const gained = ref(false);
-const gainedAmount = ref(0);
-const lost = ref(false);
-const lostAmount = ref(0);
+
+const change = ref({ state: false, amount: 0 });
 
 window.addEventListener(
-  "balance-local-storage-changed",
-  (event: { detail: { storage: number } }) => {
-    if (balance.value < event.detail.storage) {
-      gained.value = true;
-      gainedAmount.value = event.detail.storage - balance.value;
-    } else {
-      lost.value = true;
-      lostAmount.value = balance.value - event.detail.storage;
-    }
+  "animate_balance_change",
+  async (event: { detail: { balanceChange: number } }) => {
+    change.value.state = true;
+    change.value.amount = event.detail.balanceChange;
+
     const animated = document.getElementsByClassName("value")[0];
 
     animated.addEventListener("animationend", () => {
-      gained.value = false;
-      lost.value = false;
+      change.value.state = false;
+      change.value.amount = false;
     });
-    balance.value = event.detail.storage;
+    await axios.get(`/api/get-balance?userid=${userid.value}`).then((res) => {
+      balance.value = res.data.balance;
+    });
   }
 );
 
 //
 
-const displayGained = computed(() => {
-  return truncate(gainedAmount.value)
-    .toString()
-    .replace(/(\d)(?=(\d{3})+$)/g, "$1,");
-});
-
-const displayLost = computed(() => {
-  return truncate(lostAmount.value)
-    .toString()
-    .replace(/(\d)(?=(\d{3})+$)/g, "$1,");
+const displayChangedBalanced = computed(() => {
+  return change.value.amount < 0
+    ? "-"
+    : "+" +
+        truncate(change.value.amount, 0)
+          .toString()
+          .replace(/(\d)(?=(\d{3})+$)/g, "$1,");
 });
 
 const displayBalance = computed(() => {
-  return truncate(balance.value)
+  return truncate(balance.value, 0)
     .toString()
     .replace(/(\d)(?=(\d{3})+$)/g, "$1,");
 });
@@ -85,19 +91,28 @@ const displayBalance = computed(() => {
         <p class="balance">
           balance:
           <span class="value">
-            <div class="lost" v-if="lost" :class="{ fadeOut: lost }">
-              -{{ displayLost }}
+            <div
+              v-if="change.state"
+              :class="{
+                fadeOut: change.state,
+                lost: change.amount < 0,
+                gained: change.amount > 0,
+              }"
+            >
+              {{ displayChangedBalanced }}
             </div>
             {{ displayBalance }}
-            <div class="gained" v-if="gained" :class="{ fadeOut: gained }">
-              +{{ displayGained }}
-            </div>
           </span>
         </p>
         <IconCoin />
       </div>
     </div>
     <slot />
+  </div>
+
+  <div class="footer">
+    <p class="username">Logged in as {{ username }}</p>
+    <p class="copyright">© 2023 Daqy Develops & Co</p>
   </div>
 </template>
 
@@ -112,6 +127,19 @@ const displayBalance = computed(() => {
   flex-direction: column;
 }
 
+.footer {
+  width: 100%;
+  flex-grow: 1;
+  padding: 50px 40px;
+  display: flex;
+  align-items: flex-start;
+  color: var(--color-text-subtle);
+  display: flex;
+  justify-content: space-between;
+}
+
+.username {
+}
 .gameTitleContainer {
   min-width: 100%;
   min-height: 75px;
