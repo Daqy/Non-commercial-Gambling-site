@@ -68,6 +68,8 @@ app.post("/api/register", async (req, res) => {
       expiresIn: "2h",
     });
 
+    await database.addSession(token);
+
     return res.status(201).json({ token });
   } catch (error) {
     console.log(error);
@@ -98,12 +100,32 @@ app.post("/api/login", async (req, res) => {
         expiresIn: "2h",
       }
     );
+    await database.addSession(token);
 
     console.log(token);
 
     return res.status(200).json({ token });
   } catch (error) {
     console.log(error);
+  }
+});
+
+app.post("/api/logout", auth, async (req, res) => {
+  try {
+    const token =
+      req.body.token ||
+      req.query.token ||
+      req.params.token ||
+      req.headers["x-access-token"];
+
+    const removed = await database.removeSession(token);
+
+    if (removed.deletedCount > 0) {
+      return res.status(200).send("logout");
+    }
+    return res.status(400).send("failed to logout");
+  } catch (errors) {
+    console.log(errors);
   }
 });
 

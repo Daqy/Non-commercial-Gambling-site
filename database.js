@@ -64,6 +64,17 @@ const endpoints = {
       await client.close();
     }
   },
+  async delete(_collection, _query) {
+    try {
+      await client.connect();
+      return await client
+        .db(process.env.DB_NAME)
+        .collection(_collection)
+        .deleteOne(_query);
+    } finally {
+      await client.close();
+    }
+  },
   async ping() {
     try {
       await client.connect();
@@ -149,6 +160,15 @@ const endpoints = {
   async createGame(data) {
     const { insertedId } = await this.create("games", data);
     return { gameid: insertedId };
+  },
+  async addSession(token) {
+    return this.create("sessions", { token });
+  },
+  async getSession(token) {
+    return this.searchFor("sessions", { token: token });
+  },
+  async removeSession(token) {
+    return this.delete("sessions", { token: token });
   },
 };
 
