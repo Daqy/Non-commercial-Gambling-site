@@ -12,22 +12,22 @@ const cors = require("cors");
 const helmet = require("helmet");
 // const cookieParser = require("cookie-parser");
 
-const { fromServer } = require("./endpoint-handler.js");
+// const { fromServer } = require("./endpoint-handler.js");
 const { database } = require("./database.js");
 const auth = require("./middleware/auth.js");
 const { constants } = require("./constants.js");
 
-const SnowflakeId = require("snowflake-id").default;
+// const SnowflakeId = require("snowflake-id").default;
 
-const snowflake = new SnowflakeId({
-  offset: (2020 - 1970) * 31536000 * 1000,
-});
+// const snowflake = new SnowflakeId({
+//   offset: (2020 - 1970) * 31536000 * 1000,
+// });
 
-const cookieConfig = {
-  secure: true,
-  httpOnly: true,
-  sameSite: "lax",
-};
+// const cookieConfig = {
+//   secure: true,
+//   httpOnly: true,
+//   sameSite: "lax",
+// };
 
 app.use(helmet());
 // app.use(cookieParser());
