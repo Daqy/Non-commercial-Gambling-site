@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { defineProps } from "vue";
+import { defineProps } from 'vue'
 defineProps({
-  fill: { type: String, default: "#ffffff" },
-});
+  fill: { type: String, default: '#ffffff' }
+})
 </script>
 
 <template>

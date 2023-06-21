@@ -1,44 +1,39 @@
 <script lang="ts" setup>
-import { computed } from "@vue/runtime-core";
-
 const props = defineProps({
   title: {
     type: String,
     required: true,
     validator(value: string) {
-      return value.includes(" ");
-    },
-  },
-});
+      return value.includes(' ')
+    }
+  }
+})
 
-const formattedTitle = computed(() => {
-  return props.title
-    ?.split(" ")
-    .map((title, index) => {
-      if (index == 0) return `<span class="colouredText">${title}</span>`;
-      return title;
-    })
-    .join("");
-});
+const titleSections = Object.fromEntries(
+  props.title?.split(' ').map((section, index) => [index === 0 ? 'start' : 'end', section])
+)
 </script>
 
 <template>
-  <h1 v-html="formattedTitle" />
+  <h1>
+    <span class="colouredText">{{ titleSections.start }}</span
+    >{{ titleSections.end }}
+  </h1>
 </template>
 
-<style scoped lang="scss">
+<style lang="scss" scoped>
 h1 {
   text-transform: uppercase;
   margin: 15px 0px;
 }
 
-:deep(.colouredText) {
+.colouredText {
   color: var(--color-hightlight-green);
   margin-right: 8px;
 
   &::after {
     position: absolute;
-    content: "";
+    content: '';
     width: 5px;
     height: 5px;
     background-color: var(--color-hightlight-green);

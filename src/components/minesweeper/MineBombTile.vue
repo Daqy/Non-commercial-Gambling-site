@@ -1,54 +1,39 @@
 <script lang="ts" setup>
-import IconMinesweeper from "@/components/icons/IconMinesweeper.vue";
-import { computed } from "@vue/runtime-core";
-import { inject } from "vue";
+import { useGameStore } from '~stores/useGameStore'
+import { Icons } from '~components/icons'
 
-const _state = inject("states");
-
-const props = defineProps({
-  state: String,
-});
-
-const isLosingState = computed(() => {
-  return props.state == _state.LOST;
-});
-
-const computedBackground = computed(() => {
-  if (isLosingState.value)
-    return "background-color: var(--color-bomb-background)";
-  return "";
-});
+const gameStore = useGameStore()
 </script>
 
 <template>
-  <div
-    class="card"
-    :class="{ winner: !isLosingState }"
-    :style="computedBackground"
-  >
-    <IconMinesweeper />
+  <div class="bomb-container" :class="gameStore.game?.result === 'claimed' ? 'winner' : ''">
+    <component :is="Icons.minesweeper" />
   </div>
 </template>
 
 <style lang="scss" scoped>
-.winner::after {
-  content: "";
-  width: 100%;
-  height: 100%;
-  background-color: black;
-  opacity: 0.4;
-  position: absolute;
+.winner {
+  background: var(--color-bomb-background-winners) !important;
+  &::after {
+    content: '';
+    width: 100%;
+    height: 100%;
+    background-color: black;
+    opacity: 0.4;
+    position: absolute;
+  }
 }
-.card {
-  width: 100%;
+.bomb-container {
   height: 100%;
+  width: 100%;
+  background: var(--color-bomb-background);
   display: flex;
   justify-content: center;
   align-items: center;
   animation: shake 0.5s 2;
 
   svg {
-    width: 50%;
+    width: 57%;
   }
 }
 

@@ -1,3 +1,15 @@
+<script setup lang="ts">
+import { defineProps } from 'vue'
+
+defineProps({
+  mainFill: { type: String, default: 'var(--color-hightlight-green)' },
+  secondaryFill: {
+    type: String,
+    default: 'var(--color-hightlight-darker-green)'
+  }
+})
+</script>
+
 <template>
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1258.9 1258.9">
     <g id="x">
@@ -69,19 +81,7 @@
   </svg>
 </template>
 
-<script setup lang="ts">
-import { defineProps } from "vue";
-defineProps({
-  mainFill: { type: String, default: "var(--color-hightlight-green)" },
-  secondaryFill: {
-    type: String,
-    default: "var(--color-hightlight-darker-green)",
-  },
-});
-</script>
-
-<style>
-/* v-bind(mainColour); */
+<style scoped>
 .y {
   stroke: v-bind(secondaryFill);
   stroke-miterlimit: 10;
