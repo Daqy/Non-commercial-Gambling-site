@@ -21,52 +21,75 @@ function claimReward() {
 
 const claimable = ref()
 
-watch(
-  () => authStore.token,
-  (to, from) => {
-    get().then((value) => {
-      claimable.value = value
-      console.log(claimable.value)
-      timeDifference()
-    })
+// watch(
+//   () => authStore.token,
+//   (to, from) => {
 
-    // get().then((response: { username: string; balance: number }) => {
-    //   if (response) {
-    //     authStore.username = response.username
-    //     authStore.balance = response.balance
-    //   }
-    // })
-  }
-)
+//   }
+// )
 
-const timestamp = ref() //1687555403385
+const timestamp = ref()
+
+function truncateTime(time: number) {
+  return time.toString().split('.')[0]
+}
+
+function prettifyTime(time: string) {
+  const newTime = parseInt(time) % 60
+  // console.log(time.substring(time.length - 2, time.length))
+  // console.log
+  return `${newTime < 10 ? '0' : ''}${newTime}`
+  // if (parseInt(time) > 100)
+}
 
 function timeDifference() {
-  console.log(claimable.value)
-  if (claimable.value) {
+  if (claimable.value && !claimable.value.claimable) {
+    if (loading.value) return
+    if (claimable.value.timestamp < Date.now()) {
+      get().then((value) => {
+        claimable.value = value
+        timeDifference()
+      })
+    }
     const serverDate = new Date(claimable.value.timestamp)
     const now = new Date(Date.now())
-    const hours = serverDate.getHours() - now.getHours()
-    const minutes = serverDate.getMinutes() - now.getMinutes()
-    timestamp.value = `${hours}hrs ${minutes}mins`
-    // if (hours === 0 && minutes === 0) {
-    //   get().then((value) => {
-    //     claimable.value = value
-    //     console.log(claimable.value)
-    //     timeDifference()
-    //   })
-    // }
+
+    const diffTime = Math.abs(now - serverDate) / 1000
+    const hrs = truncateTime(diffTime / 60 / 60)
+    const mins = prettifyTime(truncateTime(diffTime / 60))
+    const seconds = prettifyTime(truncateTime(diffTime))
+    timestamp.value = `${hrs}:${mins}:${seconds}`
   }
 }
 
 onMounted(() => {
-  setInterval(timeDifference, 60000)
+  get().then((value) => {
+    claimable.value = value
+    timeDifference()
+  })
+  setInterval(timeDifference, 1000)
 })
 
 // const timestamp = computed(() => {})
 </script>
 
 <template>
-  <p v-if="claimable?.claimable" @click="claimReward">claim your daily</p>
-  <p v-else-if="claimable && !claimable.claimable">claim in: {{ timestamp }}</p>
+  <p class="claimable" v-if="claimable?.claimable" @click="claimReward">claim your daily</p>
+  <p v-else-if="claimable && !claimable.claimable">claim in {{ timestamp }}</p>
 </template>
+
+<style lang="scss" scoped>
+p {
+  color: var(--color-text-subtle);
+}
+
+.claimable:hover {
+  color: white;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* .claimable {
+  color: white;
+} */
+</style>

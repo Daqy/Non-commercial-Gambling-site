@@ -37,8 +37,10 @@ const heading = computed(() => {
 
 <template>
   <div class="container">
-    <AppLogo title="Just bet" />
-    <AppClaim />
+    <div class="top-container">
+      <AppLogo title="Just bet" />
+      <AppClaim v-if="authStore.token" />
+    </div>
     <AppCard :heading="heading">
       <template #icon>
         <component :is="Icons[heading.toLowerCase()]" />
@@ -55,6 +57,16 @@ const heading = computed(() => {
 </template>
 
 <style lang="scss" scoped>
+.top-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  > p {
+    margin-right: 20px;
+  }
+}
+
 footer {
   width: 100%;
   position: relative;
