@@ -3,11 +3,15 @@ import { useGameStore } from '~stores/useGameStore'
 import { Icons } from '~components/icons'
 
 const gameStore = useGameStore()
+
+defineProps<{
+  displayIcon: boolean
+}>()
 </script>
 
 <template>
-  <div class="bomb-container" :class="gameStore.game?.result === 'claimed' ? 'winner' : ''">
-    <component :is="Icons.minesweeper" />
+  <div class="bomb-container">
+    <component :is="Icons.minesweeper" v-if="displayIcon" />
   </div>
 </template>
 

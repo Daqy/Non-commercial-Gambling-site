@@ -26,8 +26,8 @@ const props = withDefaults(
 <style lang="scss" scoped>
 .skeleton-grid-loader,
 .grid {
-  width: 80%;
-  height: 80%;
+  width: 100%;
+  height: 100%;
 }
 
 .skeleton-grid-loader {

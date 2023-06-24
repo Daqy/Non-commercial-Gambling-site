@@ -12,6 +12,7 @@ import { onMounted } from 'vue'
 import { useApi } from '~services/api'
 import { ref } from 'vue'
 import { hasBeenClicked } from '~services/hasBeenClicked'
+import { getClickEarn } from '~services/getClickEarn'
 
 const authStore = useAuthStore()
 const gameStore = useGameStore()
@@ -19,7 +20,10 @@ const gameStore = useGameStore()
 const loadingClick = ref(false)
 
 onMounted(() => {
-  gameStore.getLatestGame()
+  console.log(gameStore.game)
+  if (!gameStore.game) {
+    gameStore.getLatestGame()
+  }
 })
 
 function calculateDelay(totalNumber: number, numberOfMine: number = totalNumber) {
@@ -33,7 +37,11 @@ function wait(milliseconds: number) {
 }
 
 function squareClick(id: number) {
-  if (hasBeenClicked(id, gameStore.game) || gameStore.game.state === 'done' || loadingClick.value)
+  if (
+    hasBeenClicked(id, gameStore.game.clicks) ||
+    gameStore.game.state === 'done' ||
+    loadingClick.value
+  )
     return
 
   const { get } = useApi(`/api/game/${gameStore.game._id}/click?clickPosition=${id}`)
@@ -90,29 +98,24 @@ function claimRewards() {
       })
   })
 }
-
-function getClickEarn(id: number) {
-  const clickValue = gameStore.game?.clicks?.filter(
-    (click: { position: number; earned: number }) => click.position === id
-  )
-  return clickValue[0]?.earned || 0
-}
 </script>
 
 <template>
   <main>
     <section class="game-container">
-      <MineGameBoard :loading="gameStore.loading">
-        <MineBoardSquare
-          v-for="index in gameStore.game?.size"
-          :key="index"
-          :id="index"
-          :isBomb="gameStore.game?.bomb?.position?.includes(index)"
-          :flip="hasBeenClicked(index, gameStore.game)"
-          :earn="getClickEarn(index)"
-          @square-click="squareClick"
-        />
-      </MineGameBoard>
+      <div class="big-container">
+        <MineGameBoard :loading="gameStore.loading">
+          <MineBoardSquare
+            v-for="index in gameStore.game?.size"
+            :key="index"
+            :id="index"
+            :isBomb="gameStore.game?.bomb?.position?.includes(index)"
+            :flip="hasBeenClicked(index, gameStore.game.clicks)"
+            :earn="getClickEarn(index, gameStore.game)"
+            @square-click="squareClick"
+          />
+        </MineGameBoard>
+      </div>
     </section>
     <section class="control-container">
       <div class="control-space">
@@ -157,6 +160,11 @@ function getClickEarn(id: number) {
 main {
   flex-grow: 1;
   display: flex;
+}
+
+.big-container {
+  width: 80%;
+  height: 80%;
 }
 .game-container {
   height: 100%;

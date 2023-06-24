@@ -21,7 +21,7 @@ function copy() {
   for (let index = 1; index <= gameStore.game?.size; index++) {
     copyString += gameStore.game?.bomb.position.includes(index)
       ? bombTileEmoji
-      : hasBeenClicked(index, gameStore.game)
+      : hasBeenClicked(index, gameStore.game.clicks)
       ? Icons.copy.click
       : Icons.copy.default
     if (index % 5 === 0) {

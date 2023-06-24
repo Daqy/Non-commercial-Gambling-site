@@ -43,7 +43,7 @@ const gameStore = useGameStore()
     border-radius: 5px;
     width: 25%;
     height: 96px;
-    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+    box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
     background: var(--color-container-subtle);
   }
 

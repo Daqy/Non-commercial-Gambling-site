@@ -2,12 +2,13 @@
 import { prettify } from '@/services/prettify'
 defineProps<{
   earn: number
+  displayIcon: boolean
 }>()
 </script>
 
 <template>
   <div class="money-container">
-    <p>+{{ prettify(earn) }}</p>
+    <p v-if="displayIcon">+{{ prettify(earn) }}</p>
   </div>
 </template>
 

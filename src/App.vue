@@ -2,6 +2,7 @@
 import { RouterView } from 'vue-router'
 import AppCard from '~components/AppCard.vue'
 import AppLogo from '~components/AppLogo.vue'
+import AppClaim from '~components/AppClaim.vue'
 import AppBalance from '~components/AppBalance.vue'
 import AppFooter from '~components/AppFooter.vue'
 import { Icons } from '~components/icons'
@@ -9,6 +10,7 @@ import { useRoute } from 'vue-router'
 import { computed, watch } from 'vue'
 import { useAuthStore } from '~stores/useAuthStore'
 import { useApi } from '~services/api'
+import { routerPathPrettify } from '@/services/routerPathPrettify'
 
 const { loading, get } = useApi('/api/get-user')
 
@@ -29,14 +31,14 @@ watch(
 const route = useRoute()
 
 const heading = computed(() => {
-  return route.path.replace('/', '')
+  return routerPathPrettify(route.path)
 })
 </script>
 
 <template>
   <div class="container">
     <AppLogo title="Just bet" />
-    <p>claim</p>
+    <AppClaim />
     <AppCard :heading="heading">
       <template #icon>
         <component :is="Icons[heading.toLowerCase()]" />

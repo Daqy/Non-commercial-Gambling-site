@@ -8,19 +8,25 @@ const router = createRouter({
       path: '/minesweeper',
       name: 'minesweeper',
       component: () => import('~pages/MinesweeperView.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, navigational: true }
+    },
+    {
+      path: '/game-history',
+      name: 'history',
+      component: () => import('~pages/GameHistoryView.vue'),
+      meta: { requiresAuth: true, navigational: true }
     },
     {
       path: '/login',
       name: 'login',
       component: () => import('~pages/LoginView.vue'),
-      meta: { requiresAuth: false }
+      meta: { requiresAuth: false, navigational: false }
     },
     {
       path: '/register',
       name: 'register',
       component: () => import('~pages/RegisterView.vue'),
-      meta: { requiresAuth: false }
+      meta: { requiresAuth: false, navigational: false }
     }
   ]
 })

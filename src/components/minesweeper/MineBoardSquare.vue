@@ -9,16 +9,28 @@ const gameStore = useGameStore()
 const card = ref(null)
 const hover = ref(false)
 
-const props = defineProps<{
-  earn: number
-  flip?: boolean
-  isBomb?: boolean
-  id: number
-}>()
+const props = withDefaults(
+  defineProps<{
+    earn: number
+    flip?: boolean
+    isBomb?: boolean
+    game?: any
+    id: number
+    displayIcon?: boolean
+  }>(),
+  {
+    displayIcon: true,
+    game: undefined
+  }
+)
 
 const emit = defineEmits<{
   (e: 'squareClick', id: number): void
 }>()
+
+const _game = computed(() => {
+  return props.game ? props.game : gameStore.game
+})
 
 const fipCardStyle = computed(() => {
   return props.flip || props.isBomb ? 'transition: all 1s;transform: rotateY(180deg);' : ''
@@ -33,12 +45,16 @@ const fipCardStyle = computed(() => {
     :style="fipCardStyle"
     @mouseover="hover = true"
     @mouseleave="hover = false"
-    :class="{ hover: !(props.flip || isBomb) && hover && gameStore.game?.state === 'ongoing' }"
+    :class="{ hover: !(props.flip || isBomb) && hover && _game?.state === 'ongoing' }"
   >
     <div class="front"></div>
     <div class="back">
-      <MineBombTile v-if="isBomb" />
-      <MineCashTile :earn="earn" v-else />
+      <MineBombTile
+        v-if="isBomb"
+        :display-icon="displayIcon"
+        :class="_game?.result === 'claimed' ? 'winner' : ''"
+      />
+      <MineCashTile :earn="earn" v-else :display-icon="displayIcon" />
     </div>
   </div>
 </template>
