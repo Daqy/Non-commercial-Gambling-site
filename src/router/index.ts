@@ -27,6 +27,10 @@ const router = createRouter({
       name: 'register',
       component: () => import('~pages/RegisterView.vue'),
       meta: { requiresAuth: false, navigational: false }
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/minesweeper'
     }
   ]
 })
