@@ -3,11 +3,13 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const http = require("http").Server(app);
+const https = require("https").Server(app);
 const path = require("path");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const port = process.env.PORT || 3000;
+const httpsPort = process.env.HTTPSPORT || 8000;
 const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
@@ -31,15 +33,18 @@ const { constants } = require("./constants.js");
 //   sameSite: "lax",
 // };
 
-app.use(helmet());
+// app.use(helmet());
 app.use(cookieParser());
 app.use(express.json({ limit: "50mb" }));
 
 app.use(express.static(path.join(__dirname, "dist")));
+// app.use(express.static(__dirname + "/dist/assets"));
 
 app.use(
   cors({
-    origin: "http://127.0.0.1:5174",
+    // origin: "http://127.0.0.1:5174",
+    // origin: "http://86.6.5.217",
+    origin: "https://daqy.dev",
   })
 );
 
@@ -260,15 +265,6 @@ app.get("/api/game/:id/bomb-locations", auth, async (req, res) => {
   }
 });
 
-/*
-when getting game check condiotion of game, if the game is over send everything
-if the game is still ongoing send only necessary information.
-check game state on click and stuff
-
-create game generates NextClick
-
-get game click too
-*/
 app.get("/api/get-claim", auth, async (req, res) => {
   try {
     const { _userid } = req.user;
@@ -652,10 +648,19 @@ app.post("/api/create-game", auth, async (req, res) => {
   res.status(200).send(gameid);
 });
 
+app.get("/*", (req, res) => {
+  // res.send("hello");
+  res.sendFile(path.join(__dirname + "/dist/index.html"));
+});
+// app.use(express.static(__dirname + "/dist/assets"));
+
 http.listen(port, function () {
   console.log(`listening on *:${port}`);
 });
 
+// https.listen(httpsPort, function () {
+//   console.log(`listening on *:${httpsPort}`);
+// });
 // app.get("/api/get-username", async function (req, res) {
 //   const userID = req.query.userid;
 //   const username = await fromServer().getUsername(userID).ifError([]);
