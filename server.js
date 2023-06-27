@@ -3,10 +3,11 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const http = require("http").Server(app);
-const https = require("https").Server(app);
+const https = require("https")
 const path = require("path");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const fs = require('fs'); 
 
 const port = process.env.PORT || 3000;
 const httpsPort = process.env.HTTPSPORT || 8000;
@@ -33,7 +34,7 @@ const { constants } = require("./constants.js");
 //   sameSite: "lax",
 // };
 
-// app.use(helmet());
+app.use(helmet());
 app.use(cookieParser());
 app.use(express.json({ limit: "50mb" }));
 
@@ -44,7 +45,7 @@ app.use(
   cors({
     // origin: "http://127.0.0.1:5174",
     // origin: "http://86.6.5.217",
-    origin: "https://daqy.dev",
+    origin: "https://just-bet.daqy.dev",
   })
 );
 
@@ -434,6 +435,13 @@ function getPercentageOfWining(size, nextClickCount, bombCount) {
   return total;
 }
 
+function hasBeenClicked(id, clicks) {
+  if (!clicks || clicks.length === 0) return false
+  return (
+    clicks.filter((click) => click.position === id).length > 0
+  )
+}
+
 app.get("/api/game/:id/click", auth, async (req, res) => {
   try {
     const { _userid } = req.user;
@@ -461,8 +469,9 @@ app.get("/api/game/:id/click", auth, async (req, res) => {
     if (game.state === constants.DONE) {
       return res.status(400).send("Game is finished");
     }
-
-    if ((await database.getClicks(gameid)).includes(clickPosition)) {
+    console.log(await database.getClicks(gameid))
+    
+    if (hasBeenClicked(clickPosition, await database.getClicks(gameid))) {
       return res.status(400).send("Can't click the same square");
     }
 
@@ -658,7 +667,10 @@ http.listen(port, function () {
   console.log(`listening on *:${port}`);
 });
 
-// https.listen(httpsPort, function () {
+// https.createServer({
+//   key: fs.readFileSync("cert/key.pem"),
+//   cert: fs.readFileSync("cert/cert.pem"),
+// },app).listen(httpsPort, function () {
 //   console.log(`listening on *:${httpsPort}`);
 // });
 // app.get("/api/get-username", async function (req, res) {
