@@ -36,7 +36,12 @@ function wait(milliseconds: number) {
   })
 }
 
-function squareClick(id: number) {
+const queue: number[] = []
+
+function squareClick(id: number, addToQueue = true) {
+  if (addToQueue) {
+    queue.push(id)
+  }
   if (
     hasBeenClicked(id, gameStore.game.clicks) ||
     gameStore.game.state === 'done' ||
@@ -45,6 +50,10 @@ function squareClick(id: number) {
     return
 
   const { get } = useApi(`/api/game/${gameStore.game._id}/click?clickPosition=${id}`)
+  console.log(queue, id)
+  if (queue.length > 1 && queue[0] !== id) {
+    return
+  }
   get().then(
     (response: {
       state: string
@@ -77,7 +86,13 @@ function squareClick(id: number) {
           gameStore.game = { ...gameStore.game, ...response }
         }
       }
+      queue.splice(0, 1)
       loadingClick.value = false
+      console.log(queue, id)
+      if (queue.length > 0) {
+        console.log(queue, id)
+        squareClick(queue[0], false)
+      }
     }
   )
 }
