@@ -48,7 +48,7 @@ const squareClick = (id: number) => {
         <div class="letters">
           <span v-for="(char, index) in lettersOnGrid" :key="index">{{ char }}</span>
         </div>
-        <div class="numbers">
+        <div class="numbers num-right">
           <span v-for="number in gridRowCount" :key="number">{{ number }}</span>
         </div>
       </div>
@@ -132,6 +132,10 @@ const squareClick = (id: number) => {
       height: calc(calc(428px - calc(0.5rem * 8)) / 8);
     }
   }
+}
+
+.num-right {
+  left: 480px !important;
 }
 
 .player {
