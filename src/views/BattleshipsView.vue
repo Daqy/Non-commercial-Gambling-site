@@ -2,6 +2,8 @@
 import { onUnmounted, computed, ref } from 'vue'
 import MineGameBoard from '~components/minesweeper/MineGameBoard.vue'
 import BoardSquare from '~components/battleships/BoardSquare.vue'
+import BattleshipShip from '~components/battleships/BattleshipShip.vue'
+import { useMouse } from '@vueuse/core'
 
 document.documentElement.style.setProperty('--margin-bottom-main-container', '50px')
 
@@ -16,6 +18,7 @@ const lettersOnGrid = computed(() => {
   return alphabet.slice(0, gridRowCount).split('')
 })
 const clicked = ref([])
+
 const squareClick = (id: number) => {
   clicked.value.push(id)
 }
@@ -43,12 +46,13 @@ const squareClick = (id: number) => {
         />
       </MineGameBoard>
     </section>
+
     <section class="opponent">
       <div class="gridCords">
         <div class="letters">
           <span v-for="(char, index) in lettersOnGrid" :key="index">{{ char }}</span>
         </div>
-        <div class="numbers num-right">
+        <div class="num-right numbers">
           <span v-for="number in gridRowCount" :key="number">{{ number }}</span>
         </div>
       </div>
@@ -64,7 +68,12 @@ const squareClick = (id: number) => {
         />
       </MineGameBoard>
     </section>
+
     <section class="fleet"></section>
+    <div class="ships">
+      <BattleshipShip :initial-position="{ x: 165, y: 648 }" />
+      <!-- <div ref="five" class="five ship" :style="style" style="position: fixed">{{ x }}{{ y }}</div> -->
+    </div>
   </main>
 </template>
 
@@ -135,7 +144,7 @@ const squareClick = (id: number) => {
 }
 
 .num-right {
-  left: 480px !important;
+  left: 480px;
 }
 
 .player {
