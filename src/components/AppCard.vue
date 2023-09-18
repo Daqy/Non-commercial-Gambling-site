@@ -92,9 +92,10 @@ const showDropdown = ref(false)
     content: '';
     width: 90%;
     height: 2px;
-    background: var(--color-container-heading-hover);
+    background: var(--color-text-subtle);
     position: absolute;
     left: 5%;
+    z-index: 1;
     bottom: -1px;
   }
 }
@@ -142,10 +143,14 @@ const showDropdown = ref(false)
   background-color: var(--color-container-main);
   width: 100%;
   aspect-ratio: 3.35/2;
+  /* min-height: 597px;
+  height: 0%; */
+  // above code sets the default aspect ratio to 3.35 but allows for bigger heights
   display: flex;
-  overflow: hidden;
+  /* overflow: hidden; */
   border-radius: 10px;
   flex-direction: column;
+  margin-bottom: var(--margin-bottom-main-container);
 }
 
 .heading-container {
@@ -153,6 +158,7 @@ const showDropdown = ref(false)
   width: 100%;
   min-width: 100%;
   min-height: 75px;
+  border-radius: 10px 10px 0px 0px;
   z-index: 2;
   box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
   display: flex;

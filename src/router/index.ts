@@ -5,18 +5,6 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/minesweeper',
-      name: 'minesweeper',
-      component: () => import('~pages/MinesweeperView.vue'),
-      meta: { requiresAuth: true, navigational: true }
-    },
-    {
-      path: '/game-history',
-      name: 'history',
-      component: () => import('~pages/GameHistoryView.vue'),
-      meta: { requiresAuth: true, navigational: true }
-    },
-    {
       path: '/login',
       name: 'login',
       component: () => import('~pages/LoginView.vue'),
@@ -27,6 +15,24 @@ const router = createRouter({
       name: 'register',
       component: () => import('~pages/RegisterView.vue'),
       meta: { requiresAuth: false, navigational: false }
+    },
+    {
+      path: '/minesweeper',
+      name: 'minesweeper',
+      component: () => import('~pages/MinesweeperView.vue'),
+      meta: { requiresAuth: true, navigational: true }
+    },
+    {
+      path: '/battleships',
+      name: 'battleships',
+      component: () => import('~pages/BattleshipsView.vue'),
+      meta: { requiresAuth: true, navigational: true }
+    },
+    {
+      path: '/game-history',
+      name: 'history',
+      component: () => import('~pages/GameHistoryView.vue'),
+      meta: { requiresAuth: true, navigational: true }
     },
     {
       path: '/:pathMatch(.*)*',

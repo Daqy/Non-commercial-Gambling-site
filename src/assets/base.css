@@ -24,6 +24,7 @@
   --color-lost-button-text: #ffffff;
   --color-text-bright-bg: #000000;
   --color-default-skeleton-loader: #19212e;
+  --margin-bottom-main-container: 0px;
 }
 
 *,

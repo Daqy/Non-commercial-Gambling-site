@@ -14,7 +14,7 @@ const props = withDefaults(
 </script>
 
 <template>
-  <div class="grid" v-if="!loading">
+  <div class="grid" v-if="!loading" :style="`--game-board-row-count: ${perRow}`">
     <slot />
   </div>
   <div class="skeleton-grid-loader" v-else>
@@ -45,7 +45,7 @@ const props = withDefaults(
 .grid {
   display: grid;
   gap: 0.5rem;
-  grid-template-columns: repeat(5, 1fr);
-  grid-template-rows: repeat(5, 1fr);
+  grid-template-columns: repeat(var(--game-board-row-count), 1fr);
+  grid-template-rows: repeat(var(--game-board-row-count), 1fr);
 }
 </style>
