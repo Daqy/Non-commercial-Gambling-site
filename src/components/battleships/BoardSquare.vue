@@ -12,6 +12,7 @@ const props = withDefaults(
     id: number
     displayIcon?: boolean
     userid: 1 | 2
+    hasBoat: boolean
   }>(),
   {
     displayIcon: true,
@@ -38,7 +39,7 @@ const fipCardStyle = computed(() => {
     :style="fipCardStyle"
     @mouseover="hover = true"
     @mouseleave="hover = false"
-    :class="{ hover: !(flip || userid === 1) && hover }"
+    :class="{ hover: !(flip || userid === 1) && hover, boat: hasBoat }"
   >
     <div class="front"></div>
     <div class="back">
@@ -73,6 +74,16 @@ const fipCardStyle = computed(() => {
   height: 100%;
   border-radius: 5px;
   overflow: hidden;
+}
+
+.boat {
+  .plain {
+    background: blue !important;
+  }
+}
+
+.glow {
+  box-shadow: rgba(255, 255, 255, 0.5) 0px 4px 12px;
 }
 
 .back {

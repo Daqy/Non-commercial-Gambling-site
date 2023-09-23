@@ -158,6 +158,7 @@ const showDropdown = ref(false)
   width: 100%;
   min-width: 100%;
   min-height: 75px;
+  max-height: 75px;
   border-radius: 10px 10px 0px 0px;
   z-index: 2;
   box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;

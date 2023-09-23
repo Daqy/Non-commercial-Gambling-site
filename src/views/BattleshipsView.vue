@@ -1,9 +1,8 @@
 <script lang="ts" setup>
-import { onUnmounted, computed, ref } from 'vue'
+import { onUnmounted, computed, ref, inject } from 'vue'
 import MineGameBoard from '~components/minesweeper/MineGameBoard.vue'
 import BoardSquare from '~components/battleships/BoardSquare.vue'
 import BattleshipShip from '~components/battleships/BattleshipShip.vue'
-import { useMouse } from '@vueuse/core'
 
 document.documentElement.style.setProperty('--margin-bottom-main-container', '50px')
 
@@ -22,11 +21,116 @@ const clicked = ref([])
 const squareClick = (id: number) => {
   clicked.value.push(id)
 }
+
+const grid = ref<HTMLDivElement>()
+const fleet = ref<HTMLDivElement>()
+
+const fleetPosition = computed(() => {
+  return fleet.value?.getBoundingClientRect()
+})
+
+const botPositions = ref<number[]>([])
+const shipOnGrid = ref({})
+const hiddenShips = ref([])
+
+const placeOnGrid = (data) => {
+  const boatPositions = createArray(
+    botPositions.value[0],
+    botPositions.value[0] + data.id,
+    data.rotation === 'horizontal' ? 1 : 8
+  )
+  let filtered = []
+  Object.keys(shipOnGrid.value).forEach((value) => {
+    if (value !== data.id) {
+      const ship = shipOnGrid.value[value]
+      filtered = ship.filter((key) => boatPositions.includes(key))
+    }
+  })
+  if (filtered.length > 0) {
+    return
+  }
+
+  shipOnGrid.value[data.id] = boatPositions
+  if (!hiddenShips.value.includes(data.id)) {
+    hiddenShips.value.push(data.id)
+  }
+  boatInGridElement.value = { id: data.id, pos: pos.value }
+  // updatePosition({ id: data.id, pos: { x: 0, y: 0 } })
+}
+
+const hasBoat = (index) => {
+  let returnValue = false
+  Object.keys(shipOnGrid.value).forEach((ship) => {
+    if (shipOnGrid.value[ship].includes(index)) {
+      returnValue = true
+    }
+  })
+  return returnValue
+}
+
+const handleClick = (id) => {
+  console.log(hiddenShips.value)
+  if (hiddenShips.value?.includes(id)) {
+    // shipOnGrid.value = {}
+    hiddenShips.value = []
+  }
+}
+
+const createArray = (start: number, stop: number, step = 1) => {
+  return Array.from({ length: stop - start }, (value, index) => start + index * step)
+}
+
+const boatInGridElement = ref()
+const pos = ref()
+
+const handlePosition = (ship) => {
+  const children = Array.from(grid.value?.children[1].children ?? [])
+  let hasChanged = false
+  if (ship.reset && hiddenShips.value.includes(ship.id)) {
+    hiddenShips.value.splice(
+      hiddenShips.value.findIndex((value) => value === ship.id),
+      1
+    )
+    shipOnGrid.value[ship.id] = []
+  }
+  children.forEach((child, index) => {
+    const position = child.getBoundingClientRect()
+    const gapSpace = 4
+    if (
+      ship.pos.x > position.x - gapSpace &&
+      ship.pos.x < position.x + position.width + gapSpace &&
+      ship.pos.y > position.y - gapSpace &&
+      ship.pos.y < position.y + position.height + gapSpace
+    ) {
+      // console.log(index)
+      hasChanged = true
+      pos.value = position
+      if (ship.rotation === 'horizontal') {
+        botPositions.value = createArray(index + 1, index + ship.id + 1, 1)
+        const minDiv = Math.floor(botPositions.value[0] / 8)
+        const maxDiv = Math.floor((botPositions.value[botPositions.value.length - 1] - 1) / 8)
+        if (minDiv !== maxDiv) {
+          botPositions.value = []
+        }
+      } else {
+        botPositions.value = createArray(index + 1, index + ship.id + 1, 8)
+
+        const maxDiv = Math.floor((botPositions.value[botPositions.value.length - 1] - 1) / 8)
+        if (maxDiv > 8) {
+          botPositions.value = []
+        }
+      }
+    }
+  })
+  if (!hasChanged) {
+    botPositions.value = []
+  }
+}
 </script>
 
 <template>
   <main class="game">
-    <section class="player">
+    <section class="player" ref="grid">
       <div class="gridCords">
         <div class="letters">
           <span v-for="(char, index) in lettersOnGrid" :key="index">{{ char }}</span>
@@ -35,6 +139,8 @@ const squareClick = (id: number) => {
           <span v-for="number in gridRowCount" :key="number">{{ number }}</span>
         </div>
       </div>
+
+      <!-- {{ botPositions }} {{ shipOnGrid }} -->
       <MineGameBoard :loading="false" :perRow="gridRowCount">
         <BoardSquare
           v-for="index in 64"
@@ -42,7 +148,12 @@ const squareClick = (id: number) => {
           :id="index"
           :shipHit="false"
           :flip="false"
+          :hasBoat="hasBoat(index)"
           :userid="1"
+          @square-click="handleClick"
+          :class="{
+            glow: botPositions.includes(index) && !hasBoat(index)
+          }"
         />
       </MineGameBoard>
     </section>
@@ -61,6 +172,7 @@ const squareClick = (id: number) => {
           v-for="index in 64"
           :key="index"
           :id="index"
+          :hasBoat="false"
           :shipHit="true"
           :flip="clicked.includes(index)"
           :userid="2"
@@ -69,9 +181,29 @@ const squareClick = (id: number) => {
       </MineGameBoard>
     </section>
 
-    <section class="fleet"></section>
+    <section ref="fleet" class="fleet"></section>
     <div class="ships">
-      <BattleshipShip :initial-position="{ x: 165, y: 648 }" />
+      <template v-if="fleetPosition">
+        <BattleshipShip
+          :id="5"
+          :initial-position="{ x: fleetPosition.x, y: fleetPosition.y }"
+          :grid="grid"
+          :has-been-placed="hiddenShips.includes(5)"
+          :update-position="boatInGridElement"
+          @position="handlePosition"
+          @place-on-grid="placeOnGrid"
+        />
+        <BattleshipShip
+          :id="4"
+          :initial-position="{ x: fleetPosition.x + 300, y: fleetPosition.y }"
+          :grid="grid"
+          :has-been-placed="hiddenShips.includes(4)"
+          :update-position="boatInGridElement"
+          @position="handlePosition"
+          @place-on-grid="placeOnGrid"
+        />
+      </template>
+
       <!-- <div ref="five" class="five ship" :style="style" style="position: fixed">{{ x }}{{ y }}</div> -->
     </div>
   </main>
