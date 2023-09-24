@@ -4,137 +4,90 @@ import { ref, watch, computed } from 'vue'
 
 const props = defineProps<{
   id: number
-  initialPosition: { x: number; y: number }
-  grid: HTMLDivElement
+  position: { x: number; y: number }
   hasBeenPlaced: boolean
-  updatePosition: any
 }>()
 
 const emit = defineEmits<{
   (
     e: 'position',
-    pos: { id: number; pos: { x: number; y: number }; rotation: string; reset?: boolean }
+    pos: { id: number; position: { x: number; y: number }; isHorizontal: boolean }
   ): void
-  (e: 'placeOnGrid', info: { id: number; rotation: string }): void
+  (e: 'functions', fn: { id: number; reset: any; reposition: any }): void
+  (e: 'release', id: number): void
 }>()
 
-const ship = ref()
+const shipRef = ref<HTMLDivElement>()
 
-// const shipInfo = {
-//   width: 225,
-//   height: 45
-// }
-const onGrid = ref(false)
+const grid = { size: 45.5, gap: 8 }
+const isHorizontal = ref(true)
 
-const { x, y, style, isDragging } = useDraggable(ship, {
-  initialValue: { x: props.initialPosition.x, y: props.initialPosition.y }
+const {
+  x,
+  y,
+  style: positionStyles,
+  isDragging
+} = useDraggable(shipRef, {
+  initialValue: { x: props.position.x, y: props.position.y }
 })
 
 const reset = () => {
-  ship.value.style.opacity = 1
-
-  if (onGrid.value) {
-    emit('placeOnGrid', { id: props.id, rotation: rotation.value })
-    return
-  }
-  x.value = props.initialPosition.x
-  y.value = props.initialPosition.y
-
-  emit('position', {
-    id: props.id,
-    pos: { x: x.value, y: y.value },
-    rotation: rotation.value,
-    reset: true
-  })
+  x.value = props.position.x
+  y.value = props.position.y
+  isHorizontal.value = true
 }
 
-watch(
-  () => props.updatePosition,
-  ({ id, pos }) => {
-    // console.log(onGrid.value)
-    if (props.id === id && onGrid.value) {
-      x.value = pos.x
-      y.value = pos.y
-    }
-  }
-)
-
-const gridSquareSize = 45.5
-const gridGapSize = 8
-
-watch(
-  () => [x.value, y.value],
-  ([_x, _y]) => {
-    onGrid.value = false
-    const grid = props.grid?.getBoundingClientRect()
-    const padding = Number(window.getComputedStyle(props.grid).padding.replace(/\D+/g, ''))
-    if (
-      rotation.value === 'horizontal' &&
-      _x > grid.x + padding - gridGapSize &&
-      _x <
-        grid.x +
-          grid.width -
-          padding -
-          (gridGapSize * (props.id - 2) + gridSquareSize * (props.id - 1)) &&
-      _y > grid.y + padding - gridGapSize &&
-      _y < grid.y + grid.height - padding - gridGapSize
-    ) {
-      onGrid.value = true
-      emit('position', { id: props.id, pos: { x: _x, y: _y }, rotation: rotation.value })
-    } else if (
-      rotation.value === 'vertical' &&
-      _x > grid.x + padding - gridGapSize &&
-      _x < grid.x + grid.width - padding + gridGapSize &&
-      _y > grid.y + padding - gridGapSize &&
-      _y <
-        grid.y +
-          grid.height -
-          padding -
-          (gridGapSize * (props.id - 2) + gridSquareSize * (props.id - 1))
-    ) {
-      onGrid.value = true
-      emit('position', { id: props.id, pos: { x: _x, y: _y }, rotation: rotation.value })
-    }
-  }
-)
-
-const handleRotation = (event) => {
-  if (isDragging.value && event.key === 'r') {
-    rotation.value = rotation.value === 'horizontal' ? 'vertical' : 'horizontal'
+const handleRotation = (event: KeyboardEvent) => {
+  console.log('rotate', props.id, isDragging.value && event.key)
+  if (isDragging.value && (event.key === 'r' || event.key === 'R')) {
+    isHorizontal.value = !isHorizontal.value
+    emitPosition()
   }
 }
-
-const rotation = ref('horizontal')
 
 const sizeStyleVar = computed(() => {
-  if (rotation.value === 'horizontal') {
-    return `height: ${gridSquareSize * 1}px; width: ${
-      gridSquareSize * props.id + gridGapSize * (props.id - 1)
-    }px`
+  if (isHorizontal.value) {
+    return `height: ${grid.size}px; width: ${grid.size * props.id + grid.gap * (props.id - 1)}px`
   }
-  return `height: ${gridSquareSize * props.id + gridGapSize * (props.id - 1)}px; width: ${
-    gridSquareSize * 1
-  }px`
+  return `height: ${grid.size * props.id + grid.gap * (props.id - 1)}px; width: ${grid.size}px`
 })
 
 const shipDragStyle = computed(() => {
-  return isDragging.value
-    ? 'opacity: 0.3 !important'
-    : props.hasBeenPlaced
-    ? 'opacity: 0'
-    : 'opacity: 1'
+  return isDragging.value ? 'opacity: 0.3' : props.hasBeenPlaced ? 'opacity: 0' : 'opacity: 1'
 })
+
+const emitPosition = () => {
+  emit('position', {
+    id: props.id,
+    position: { x: x.value, y: y.value },
+    isHorizontal: isHorizontal.value
+  })
+}
+
+const reposition = ({ x: _x, y: _y }: { x: number; y: number }) => {
+  x.value = _x
+  y.value = _y
+}
+
+watch(
+  () => [x.value, y.value],
+  () => {
+    emitPosition()
+  }
+)
+
+emit('functions', { id: props.id, reset, reposition })
 </script>
 
 <template>
   <div
     tabindex="0"
-    ref="ship"
+    ref="shipRef"
     class="ship"
-    :class="{ hide: hasBeenPlaced }"
-    :style="[style, shipDragStyle, sizeStyleVar]"
-    @mouseup="reset"
+    :style="[positionStyles, shipDragStyle, sizeStyleVar]"
+    :class="{ dragging: isDragging }"
     @keyup="handleRotation"
+    @mouseup="emit('release', id)"
   >
     <!-- {{ x }}, {{ y }} -->
   </div>
@@ -144,9 +97,6 @@ const shipDragStyle = computed(() => {
 .ship {
   z-index: 10;
   border-radius: 5px;
-  /* height: 45px; */
-  /* width: 45px; */
-  /* width: 225px; */
 
   position: fixed;
   background: red;
@@ -154,5 +104,9 @@ const shipDragStyle = computed(() => {
   &:hover {
     cursor: pointer;
   }
+}
+
+.dragging {
+  z-index: 11;
 }
 </style>

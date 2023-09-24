@@ -16,11 +16,6 @@ const alphabet = 'abcdefghijklmnopqrstuvwxyz'
 const lettersOnGrid = computed(() => {
   return alphabet.slice(0, gridRowCount).split('')
 })
-const clicked = ref([])
-
-const squareClick = (id: number) => {
-  clicked.value.push(id)
-}
 
 const grid = ref<HTMLDivElement>()
 const fleet = ref<HTMLDivElement>()
@@ -29,102 +24,110 @@ const fleetPosition = computed(() => {
   return fleet.value?.getBoundingClientRect()
 })
 
-const botPositions = ref<number[]>([])
-const shipOnGrid = ref({})
-const hiddenShips = ref([])
-
-const placeOnGrid = (data) => {
-  const boatPositions = createArray(
-    botPositions.value[0],
-    botPositions.value[0] + data.id,
-    data.rotation === 'horizontal' ? 1 : 8
-  )
-  let filtered = []
-  Object.keys(shipOnGrid.value).forEach((value) => {
-    if (value !== data.id) {
-      const ship = shipOnGrid.value[value]
-      filtered = ship.filter((key) => boatPositions.includes(key))
-    }
-  })
-  if (filtered.length > 0) {
-    return
-  }
-
-  shipOnGrid.value[data.id] = boatPositions
-  if (!hiddenShips.value.includes(data.id)) {
-    hiddenShips.value.push(data.id)
-  }
-  boatInGridElement.value = { id: data.id, pos: pos.value }
-  // updatePosition({ id: data.id, pos: { x: 0, y: 0 } })
-}
-
-const hasBoat = (index) => {
-  let returnValue = false
-  Object.keys(shipOnGrid.value).forEach((ship) => {
-    if (shipOnGrid.value[ship].includes(index)) {
-      returnValue = true
-    }
-  })
-  return returnValue
-}
-
-const handleClick = (id) => {
-  console.log(hiddenShips.value)
-  if (hiddenShips.value?.includes(id)) {
-    // shipOnGrid.value = {}
-    hiddenShips.value = []
-  }
-}
-
 const createArray = (start: number, stop: number, step = 1) => {
   return Array.from({ length: stop - start }, (value, index) => start + index * step)
 }
 
-const boatInGridElement = ref()
-const pos = ref()
+const shipFunctions = ref<{ [id: number]: any }>({})
+const isHovering = ref<number[]>([])
+const onGrid = ref<{ [id: number]: number[] }>({})
 
-const handlePosition = (ship) => {
-  const children = Array.from(grid.value?.children[1].children ?? [])
-  let hasChanged = false
-  if (ship.reset && hiddenShips.value.includes(ship.id)) {
-    hiddenShips.value.splice(
-      hiddenShips.value.findIndex((value) => value === ship.id),
-      1
-    )
-    shipOnGrid.value[ship.id] = []
+const getFunctionCalls = (data: { id: number; [fn: string]: any }) => {
+  const { id, ...fn } = data
+  shipFunctions.value[id] = fn
+}
+
+const placeOnGrid = (id: number) => {
+  console.log(id)
+  if (isHovering.value.length === 0) {
+    delete onGrid.value[id]
+    shipFunctions.value[id].reset()
+    return
   }
-  children.forEach((child, index) => {
-    const position = child.getBoundingClientRect()
-    const gapSpace = 4
-    if (
-      ship.pos.x > position.x - gapSpace &&
-      ship.pos.x < position.x + position.width + gapSpace &&
-      ship.pos.y > position.y - gapSpace &&
-      ship.pos.y < position.y + position.height + gapSpace
-    ) {
-      // console.log(index)
-      hasChanged = true
-      pos.value = position
-      if (ship.rotation === 'horizontal') {
-        botPositions.value = createArray(index + 1, index + ship.id + 1, 1)
-        const minDiv = Math.floor(botPositions.value[0] / 8)
-        const maxDiv = Math.floor((botPositions.value[botPositions.value.length - 1] - 1) / 8)
-        if (minDiv !== maxDiv) {
-          botPositions.value = []
-        }
-      } else {
-        botPositions.value = createArray(index + 1, index + ship.id + 1, 8)
 
-        const maxDiv = Math.floor((botPositions.value[botPositions.value.length - 1] - 1) / 8)
-        if (maxDiv > 8) {
-          botPositions.value = []
+  onGrid.value[id] = isHovering.value
+  isHovering.value = []
+
+  const gridBox = grid.value?.children[1].children[onGrid.value[id][0] - 1].getBoundingClientRect()
+  shipFunctions.value[id].reposition({ x: gridBox?.x, y: gridBox?.y })
+}
+
+const shipOnGrid = (gridNumber: number) => {
+  if (!onGrid.value) {
+    return false
+  }
+  const keys = Object.keys(onGrid.value)
+  for (const key of keys) {
+    if (onGrid.value[Number(key)].includes(gridNumber)) {
+      return true
+    }
+  }
+  return false
+}
+
+const handleShipPositionUpdate = ({ id, position, isHorizontal }) => {
+  if (!grid.value) {
+    return
+  }
+
+  const gridPositions = grid.value.getBoundingClientRect()
+  const padding = Number(window.getComputedStyle(grid.value).padding.replace(/\D+/g, ''))
+
+  //check if ship is on the grid, if it isn't return
+  if (
+    !(
+      position.x > gridPositions.x + padding &&
+      gridPositions.x + gridPositions.width - padding > position.x &&
+      position.y > gridPositions.y + padding &&
+      gridPositions.y + gridPositions.height - padding > position.y
+    )
+  ) {
+    isHovering.value = []
+
+    return
+  }
+  // const gridSize = { size: 45, gap: 8 }
+  const children = Array.from(grid.value?.children[1].children ?? [])
+
+  children.forEach((gridBox, gridNumber) => {
+    const gridBoxPosition = gridBox.getBoundingClientRect()
+    // check if topleft of ship is in the box
+    if (
+      !(
+        position.x > gridBoxPosition.x &&
+        gridBoxPosition.x + gridBoxPosition.width > position.x &&
+        position.y > gridBoxPosition.y &&
+        gridBoxPosition.y + gridBoxPosition.height > position.y
+      )
+    ) {
+      return
+    }
+    const hoverPosition = createArray(gridNumber + 1, gridNumber + 1 + id, isHorizontal ? 1 : 8)
+
+    //check if the hover position is being placed onto a new line, if it prevent it.
+    if (
+      (isHorizontal &&
+        Math.floor((hoverPosition[0] - 1) / 8) !==
+          Math.floor((hoverPosition[hoverPosition.length - 1] - 1) / 8)) ||
+      (!isHorizontal && Math.floor(hoverPosition[hoverPosition.length - 1]) / 8 > 8)
+    ) {
+      isHovering.value = []
+      return
+    }
+    // check if ship is hovering another ship
+    for (const pos of hoverPosition) {
+      const keys = Object.keys(onGrid.value)
+
+      for (const key of keys) {
+        if (onGrid.value[Number(key)].includes(pos) && Number(key) !== id) {
+          isHovering.value = []
+          return
         }
       }
     }
+
+    isHovering.value = hoverPosition
   })
-  if (!hasChanged) {
-    botPositions.value = []
-  }
 }
 </script>
 
@@ -143,17 +146,14 @@ const handlePosition = (ship) => {
       <!-- {{ botPositions }} {{ shipOnGrid }} -->
       <MineGameBoard :loading="false" :perRow="gridRowCount">
         <BoardSquare
-          v-for="index in 64"
-          :key="index"
-          :id="index"
+          v-for="gridNumber in 64"
+          :key="gridNumber"
+          :id="gridNumber"
           :shipHit="false"
           :flip="false"
-          :hasBoat="hasBoat(index)"
+          :hasBoat="shipOnGrid(gridNumber)"
           :userid="1"
-          @square-click="handleClick"
-          :class="{
-            glow: botPositions.includes(index) && !hasBoat(index)
-          }"
+          :class="{ glow: isHovering.includes(gridNumber) }"
         />
       </MineGameBoard>
     </section>
@@ -174,9 +174,8 @@ const handlePosition = (ship) => {
           :id="index"
           :hasBoat="false"
           :shipHit="true"
-          :flip="clicked.includes(index)"
+          :flip="false"
           :userid="2"
-          @square-click="squareClick"
         />
       </MineGameBoard>
     </section>
@@ -185,26 +184,19 @@ const handlePosition = (ship) => {
     <div class="ships">
       <template v-if="fleetPosition">
         <BattleshipShip
-          :id="5"
-          :initial-position="{ x: fleetPosition.x, y: fleetPosition.y }"
-          :grid="grid"
-          :has-been-placed="hiddenShips.includes(5)"
-          :update-position="boatInGridElement"
-          @position="handlePosition"
-          @place-on-grid="placeOnGrid"
-        />
-        <BattleshipShip
-          :id="4"
-          :initial-position="{ x: fleetPosition.x + 300, y: fleetPosition.y }"
-          :grid="grid"
-          :has-been-placed="hiddenShips.includes(4)"
-          :update-position="boatInGridElement"
-          @position="handlePosition"
-          @place-on-grid="placeOnGrid"
+          v-for="ship in 5"
+          :key="ship"
+          :id="ship"
+          :position="{
+            x: fleetPosition.x + 75 * (ship - 1),
+            y: fleetPosition.y
+          }"
+          :has-been-placed="!!onGrid[ship]"
+          @functions="getFunctionCalls"
+          @position="handleShipPositionUpdate"
+          @release="placeOnGrid"
         />
       </template>
-
-      <!-- <div ref="five" class="five ship" :style="style" style="position: fixed">{{ x }}{{ y }}</div> -->
     </div>
   </main>
 </template>
