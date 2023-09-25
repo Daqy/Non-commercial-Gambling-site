@@ -3,11 +3,11 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const http = require("http").Server(app);
-const https = require("https")
+const https = require("https");
 const path = require("path");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const fs = require('fs'); 
+const fs = require("fs");
 
 const port = process.env.PORT || 3000;
 const httpsPort = process.env.HTTPSPORT || 8000;
@@ -355,8 +355,6 @@ app.get("/api/game-history", auth, async (req, res) => {
       return res.status(404).send("No games found");
     }
 
-    console.log(game);
-
     const gameHistory = game.filter((value) => value.state === constants.DONE);
 
     // if (latestGame.state !== "done") {
@@ -372,54 +370,43 @@ app.post("/api/balance", auth, async (req, res) => {
   try {
     const { _userid } = req.user;
     const { balance, gameid } = req.body;
-    console.log("exist");
     if (!(balance && gameid) && balance !== 0) {
       return res.status(400).send("Missing balance or game id");
     }
-    console.log("id");
 
     if (gameid.length != 24) {
       return res.status(400).send("A valid ID is required");
     }
 
     const game = await database.getGame(gameid);
-    console.log("game");
 
     if (!game) {
       return res.status(404).send("Game does not exist");
     }
-    console.log("userid");
 
     if (game.belongsTo.toString() !== _userid) {
       return res.status(403).send("Unathorised access to game");
     }
     //
-    console.log("done");
 
     if (balance > 0 && game.state !== constants.DONE) {
       return res.status(400).send("Game isn't finished");
     }
-    console.log(1);
-    console.log("has");
 
     if (balance > 0 && game.hasClaimed) {
       return res.status(400).send("Game has already been claimed");
     }
-
-    console.log("set");
 
     const user = await database.getUser("_id", _userid);
     const newBalance = balance + user.balance;
     const updatedBalance = await database.updateBalance(_userid, newBalance);
 
     if (updatedBalance.modifiedCount > 0) {
-      console.log("pass");
       if (balance > 0) {
         await database.updateClaimedGame(gameid);
       }
       return res.status(200).send({ balance: newBalance });
     }
-    console.log("failed");
 
     return res.status(400).send("Failed to update");
   } catch (errors) {
@@ -436,10 +423,8 @@ function getPercentageOfWining(size, nextClickCount, bombCount) {
 }
 
 function hasBeenClicked(id, clicks) {
-  if (!clicks || clicks.length === 0) return false
-  return (
-    clicks.filter((click) => click.position === id).length > 0
-  )
+  if (!clicks || clicks.length === 0) return false;
+  return clicks.filter((click) => click.position === id).length > 0;
 }
 
 app.get("/api/game/:id/click", auth, async (req, res) => {
@@ -469,8 +454,7 @@ app.get("/api/game/:id/click", auth, async (req, res) => {
     if (game.state === constants.DONE) {
       return res.status(400).send("Game is finished");
     }
-    console.log(await database.getClicks(gameid))
-    
+
     if (hasBeenClicked(clickPosition, await database.getClicks(gameid))) {
       return res.status(400).send("Can't click the same square");
     }
@@ -485,7 +469,6 @@ app.get("/api/game/:id/click", auth, async (req, res) => {
       );
       const pool = (1 / chanceOFWinning) * game.stake;
       earned = pool - game.pool;
-      console.log(earned);
 
       const newPool = await database.updateGamePool(gameid, earned);
       if (newPool !== pool) {
@@ -578,7 +561,6 @@ app.post("/api/claim-game", auth, async (req, res) => {
     if (game.state === "done") {
       return res.status(400).send("Game already claimed");
     }
-    console.log(game);
     if (game.clicks.length === 0) {
       return res.status(400).send("Must click at least once");
     }
@@ -619,11 +601,9 @@ app.post("/api/create-game", auth, async (req, res) => {
   const { _userid } = req.user;
   const { bombCount, stake } = req.body;
 
-  console.log(bombCount, stake);
   if (!(bombCount && stake)) {
     return res.status(400).send("Missing bombcount or stake");
   }
-  console.log("test");
 
   const usergames = await database.getUserGames(_userid);
 
