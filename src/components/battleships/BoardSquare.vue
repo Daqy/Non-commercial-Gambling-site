@@ -78,12 +78,12 @@ const fipCardStyle = computed(() => {
 
 .boat {
   .plain {
-    background: blue !important;
+    background: var(--color-hightlight-green) !important;
   }
 }
 
 .glow {
-  box-shadow: rgba(255, 255, 255, 0.5) 0px 4px 12px;
+  box-shadow: var(--color-hightlight-green) 0px 4px 12px;
 }
 
 .back {

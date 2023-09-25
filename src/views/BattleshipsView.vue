@@ -38,7 +38,6 @@ const getFunctionCalls = (data: { id: number; [fn: string]: any }) => {
 }
 
 const placeOnGrid = (id: number) => {
-  console.log(id)
   if (isHovering.value.length === 0) {
     delete onGrid.value[id]
     shipFunctions.value[id].reset()
@@ -181,22 +180,29 @@ const handleShipPositionUpdate = ({ id, position, isHorizontal }) => {
     </section>
 
     <section ref="fleet" class="fleet"></section>
-    <div class="ships">
-      <template v-if="fleetPosition">
-        <BattleshipShip
-          v-for="ship in 5"
-          :key="ship"
-          :id="ship"
-          :position="{
-            x: fleetPosition.x + 75 * (ship - 1),
-            y: fleetPosition.y
-          }"
-          :has-been-placed="!!onGrid[ship]"
-          @functions="getFunctionCalls"
-          @position="handleShipPositionUpdate"
-          @release="placeOnGrid"
-        />
-      </template>
+    <div
+      v-if="fleetPosition"
+      class="ships"
+      :style="`top: ${fleetPosition.y}px;left: ${fleetPosition.x}px;width: ${fleetPosition.width}px`"
+    >
+      <BattleshipShip
+        v-for="(ship, index) in [5, 4, 3, 2, 1]"
+        :key="ship"
+        :id="ship"
+        :position="{
+          x: fleetPosition.x + 10 + (300 - 30 * (index - 1)) * index,
+          y: fleetPosition.y + 10
+        }"
+        :has-been-placed="!!onGrid[ship]"
+        @functions="getFunctionCalls"
+        @position="handleShipPositionUpdate"
+        @release="placeOnGrid"
+      />
+      <div class="button-container">
+        <button v-if="Object.keys(onGrid).length === 5" class="button">
+          Confirm Ship Placement
+        </button>
+      </div>
     </div>
   </main>
 </template>
@@ -208,6 +214,8 @@ const handleShipPositionUpdate = ({ id, position, isHorizontal }) => {
   flex-grow: 1;
 
   & > section:not(.fleet) {
+    user-select: none;
+
     /* width: 50%; */
     padding: 40px;
     height: calc(100% - 22px);
@@ -215,16 +223,57 @@ const handleShipPositionUpdate = ({ id, position, isHorizontal }) => {
   }
 }
 
+.ships {
+  position: fixed;
+  display: flex;
+  /* justify-content: space-between; */
+  gap: 1.85rem;
+  padding: 10px;
+  /* justify-items: space-between; */
+  /* justify-items: */
+}
+
 .fleet {
   position: absolute;
-  width: 80%;
-  height: 100px;
+  width: 90%;
+  height: 65.5px;
   background: var(--color-container-titles);
   box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
-  bottom: -78px;
+  bottom: -44px;
   border-radius: 10px;
   left: 50%;
   transform: translate(-50%, 0);
+}
+
+.button-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.button {
+  text-transform: capitalize;
+}
+
+.button:not(:disabled) {
+  background: var(--color-container-subtle);
+  box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+  border: 2px solid var(--color-create-game-button);
+  border-radius: 5px;
+  min-height: 45.5px;
+  padding: 10px 20px;
+  /* aspect-ratio: 4/1; */
+  font-size: 1em;
+  font-weight: bold;
+  color: var(--color-create-game-button);
+
+  &:hover {
+    cursor: pointer;
+    background: var(--color-create-game-button);
+    color: var(--color-create-game-button-text);
+  }
 }
 
 .gridCords {
@@ -240,6 +289,8 @@ const handleShipPositionUpdate = ({ id, position, isHorizontal }) => {
     text-transform: uppercase;
     display: flex;
     gap: 0.5rem;
+    user-select: none;
+
     /* gap: 0 20px; */
 
     span {
@@ -251,6 +302,7 @@ const handleShipPositionUpdate = ({ id, position, isHorizontal }) => {
 
   .numbers {
     position: absolute;
+    user-select: none;
     top: 40px;
     left: 20px;
     transform: translate(-50%, 0);

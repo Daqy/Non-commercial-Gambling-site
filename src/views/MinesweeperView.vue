@@ -49,7 +49,7 @@ function squareClick(id: number, addToQueue = true) {
   )
     return
 
-  const { get } = useApi(`/api/game/${gameStore.game._id}/click?clickPosition=${id}`)
+  const { get } = useApi(`/api/game/minesweeper/${gameStore.game._id}/click?clickPosition=${id}`)
   console.log(queue, id)
   if (queue.length > 1 && queue[0] !== id) {
     return

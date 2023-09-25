@@ -38,7 +38,6 @@ const reset = () => {
 }
 
 const handleRotation = (event: KeyboardEvent) => {
-  console.log('rotate', props.id, isDragging.value && event.key)
   if (isDragging.value && (event.key === 'r' || event.key === 'R')) {
     isHorizontal.value = !isHorizontal.value
     emitPosition()
@@ -49,7 +48,9 @@ const sizeStyleVar = computed(() => {
   if (isHorizontal.value) {
     return `height: ${grid.size}px; width: ${grid.size * props.id + grid.gap * (props.id - 1)}px`
   }
-  return `height: ${grid.size * props.id + grid.gap * (props.id - 1)}px; width: ${grid.size}px`
+  return `height: ${grid.size * props.id + grid.gap * (props.id - 1)}px; width: ${
+    grid.size
+  }px; flex-direction: column;`
 })
 
 const shipDragStyle = computed(() => {
@@ -69,10 +70,23 @@ const reposition = ({ x: _x, y: _y }: { x: number; y: number }) => {
   y.value = _y
 }
 
+const posStyle = computed(() => {
+  return isDragging.value || props.hasBeenPlaced ? positionStyles.value + 'position: fixed' : ''
+})
+
 watch(
   () => [x.value, y.value],
   () => {
     emitPosition()
+  }
+)
+
+watch(
+  () => isDragging.value,
+  () => {
+    if (!isDragging.value) {
+      emit('release', props.id)
+    }
   }
 )
 
@@ -84,11 +98,11 @@ emit('functions', { id: props.id, reset, reposition })
     tabindex="0"
     ref="shipRef"
     class="ship"
-    :style="[positionStyles, shipDragStyle, sizeStyleVar]"
+    :style="[posStyle, shipDragStyle, sizeStyleVar]"
     :class="{ dragging: isDragging }"
     @keyup="handleRotation"
-    @mouseup="emit('release', id)"
   >
+    <span v-for="box in id" :key="box"></span>
     <!-- {{ x }}, {{ y }} -->
   </div>
 </template>
@@ -98,11 +112,21 @@ emit('functions', { id: props.id, reset, reposition })
   z-index: 10;
   border-radius: 5px;
 
-  position: fixed;
-  background: red;
+  /* position: fixed; */
+  display: flex;
+  gap: 0.5rem;
 
   &:hover {
     cursor: pointer;
+  }
+
+  span {
+    /* background: var(--color-card-main); */
+    /* background: var(--color-hightlight-darker-green); */
+    background: var(--color-hightlight-green);
+    aspect-ratio: 1/1;
+    border-radius: 5px;
+    height: 100%;
   }
 }
 
