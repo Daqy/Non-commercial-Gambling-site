@@ -3,6 +3,8 @@ import { onUnmounted, computed, ref, inject } from 'vue'
 import MineGameBoard from '~components/minesweeper/MineGameBoard.vue'
 import BoardSquare from '~components/battleships/BoardSquare.vue'
 import BattleshipShip from '~components/battleships/BattleshipShip.vue'
+import { useApi } from '@/services/api'
+import { game } from '@/mock/game'
 
 document.documentElement.style.setProperty('--margin-bottom-main-container', '50px')
 
@@ -12,6 +14,10 @@ onUnmounted(() => {
 
 const gridRowCount = 8
 const alphabet = 'abcdefghijklmnopqrstuvwxyz'
+
+const { get, data, loading } = useApi('/api/latest-game?gameType=battleships')
+
+get()
 
 const lettersOnGrid = computed(() => {
   return alphabet.slice(0, gridRowCount).split('')
@@ -52,16 +58,27 @@ const placeOnGrid = (id: number) => {
 }
 
 const shipOnGrid = (gridNumber: number) => {
-  if (!onGrid.value) {
+  if (!data.value) return false
+  if (data.value.state === 'prep') {
+    if (!onGrid.value) {
+      return false
+    }
+    const keys = Object.keys(onGrid.value)
+    for (const key of keys) {
+      if (onGrid.value[Number(key)].includes(gridNumber)) {
+        return true
+      }
+    }
+    return false
+  } else {
+    const keys = Object.keys(data.value.ships)
+    for (const key of keys) {
+      if (data.value.ships[Number(key)].includes(gridNumber)) {
+        return true
+      }
+    }
     return false
   }
-  const keys = Object.keys(onGrid.value)
-  for (const key of keys) {
-    if (onGrid.value[Number(key)].includes(gridNumber)) {
-      return true
-    }
-  }
-  return false
 }
 
 const handleShipPositionUpdate = ({ id, position, isHorizontal }) => {
@@ -128,6 +145,39 @@ const handleShipPositionUpdate = ({ id, position, isHorizontal }) => {
     isHovering.value = hoverPosition
   })
 }
+
+const opponentHasClicked = (id: number) => {
+  if (!data.value) return false
+  for (const key of Object.keys(data.value.opponent.clicks)) {
+    if (Number(key) === id) {
+      return true
+    }
+  }
+  return false
+}
+
+const userHasClicked = (id: number) => {
+  if (!data.value) return false
+  for (const key of Object.keys(data.value.clicks)) {
+    if (Number(key) === id) {
+      console.log(key, id)
+      return true
+    }
+  }
+  return false
+}
+
+const userHasClickedBoat = (id: number) => {
+  if (!data.value) return false
+  for (const key of Object.keys(data.value.clicks)) {
+    if (data.value.clicks[key] && Number(key) === id) {
+      return true
+    }
+  }
+  return false
+}
+
+const handleBoardClick = (id: number) => {}
 </script>
 
 <template>
@@ -143,13 +193,12 @@ const handleShipPositionUpdate = ({ id, position, isHorizontal }) => {
       </div>
 
       <!-- {{ botPositions }} {{ shipOnGrid }} -->
-      <MineGameBoard :loading="false" :perRow="gridRowCount">
+      <MineGameBoard :loading="loading" :perRow="gridRowCount">
         <BoardSquare
           v-for="gridNumber in 64"
           :key="gridNumber"
           :id="gridNumber"
-          :shipHit="false"
-          :flip="false"
+          :flip="opponentHasClicked(gridNumber)"
           :hasBoat="shipOnGrid(gridNumber)"
           :userid="1"
           :class="{ glow: isHovering.includes(gridNumber) }"
@@ -171,17 +220,17 @@ const handleShipPositionUpdate = ({ id, position, isHorizontal }) => {
           v-for="index in 64"
           :key="index"
           :id="index"
-          :hasBoat="false"
-          :shipHit="true"
-          :flip="false"
+          :has-boat="userHasClickedBoat(index)"
+          :flip="userHasClicked(index)"
           :userid="2"
+          @click="handleBoardClick(index)"
         />
       </MineGameBoard>
     </section>
 
     <section ref="fleet" class="fleet"></section>
     <div
-      v-if="fleetPosition"
+      v-if="fleetPosition && !loading && data.state === 'prep'"
       class="ships"
       :style="`top: ${fleetPosition.y}px;left: ${fleetPosition.x}px;width: ${fleetPosition.width}px`"
     >

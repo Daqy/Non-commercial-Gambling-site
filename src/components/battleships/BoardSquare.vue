@@ -8,15 +8,15 @@ const props = withDefaults(
   defineProps<{
     flip?: boolean
     game?: any
-    shipHit: boolean
     id: number
     displayIcon?: boolean
     userid: 1 | 2
-    hasBoat: boolean
+    hasBoat?: boolean
   }>(),
   {
     displayIcon: true,
-    game: undefined
+    game: undefined,
+    hasBoat: false
   }
 )
 
@@ -43,8 +43,8 @@ const fipCardStyle = computed(() => {
   >
     <div class="front"></div>
     <div class="back">
-      <MineBombTile v-if="shipHit" :display-icon="displayIcon" />
-      <div class="plain">
+      <MineBombTile v-if="hasBoat && flip" :display-icon="displayIcon" />
+      <div class="plain" v-else>
         <div class="circle" v-if="userid === 1 && flip"></div>
       </div>
     </div>
@@ -112,7 +112,8 @@ const fipCardStyle = computed(() => {
 }
 
 .circle {
-  background: var(--color-container-titles);
+  background: var(--color-text-subtle);
+  /* background: var(--color-container-titles); */
   height: 50%;
   border-radius: 100%;
   width: 50%;
