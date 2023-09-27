@@ -15,6 +15,14 @@ const cors = require("cors");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 
+const { Server } = require("socket.io");
+const io = new Server(http, {
+  cors: {
+    origin: "http://192.168.1.102:5173",
+    // origin: "http://localhost:5173",
+  },
+});
+
 // const { fromServer } = require("./endpoint-handler.js");
 // const { database } = require("./database.js");
 const { database } = require("./endpoint-resolver.js");
@@ -43,9 +51,9 @@ app.use(express.static(path.join(__dirname, "dist")));
 
 app.use(
   cors({
-    // origin: "http://127.0.0.1:5174",
+    origin: "http://127.0.0.1:5174",
     // origin: "http://86.6.5.217",
-    origin: "https://just-bet.daqy.dev",
+    // origin: "https://just-bet.daqy.dev",
   })
 );
 
@@ -222,13 +230,38 @@ app.get("/api/game/:id", auth, async (req, res) => {
     if (!game) {
       return res.status(404).send("Game does not exist");
     }
-
-    if (game.belongsTo.toString() !== _userid) {
+    if (
+      game.belongsTo.toString() !== _userid &&
+      game.opponent.id.toString() !== _userid
+    ) {
       return res.status(403).send("Unathorised access to game");
     }
 
+    if (
+      game.belongsTo.toString() !== _userid &&
+      game.gameType === "battleships"
+    ) {
+      const opponent = {
+        id: game.belongsTo,
+        ships: game.ships,
+        clicks: game.clicks,
+      };
+
+      game.ships = game.opponent.ships;
+      game.clicks = game.opponent.clicks;
+      game.opponent = opponent;
+    }
+
     if (game.state !== "done") {
-      delete game.bomb.position;
+      if (game.gameType === "minesweeper") {
+        delete game.bomb.position;
+      }
+
+      if (game.gameType === "battleships") {
+        delete game.belongsTo;
+        delete game.opponent.ships;
+        game.turn = game.turn.toString() === _userid;
+      }
     }
 
     return res.status(200).send(game);
@@ -236,6 +269,11 @@ app.get("/api/game/:id", auth, async (req, res) => {
     console.log(errors);
   }
 });
+
+// app.post("/api/game/updateSweepers", async (req, res) => {
+//   await database.updateGameType();
+//   res.status(200).send("ok");
+// });
 
 app.get("/api/game/:id/bomb-locations", auth, async (req, res) => {
   try {
@@ -254,6 +292,10 @@ app.get("/api/game/:id/bomb-locations", auth, async (req, res) => {
 
     if (!game) {
       return res.status(404).send("Game does not exist");
+    }
+
+    if (game.gameType !== "minesweeper") {
+      return res.status(404).send("Wrong game type");
     }
 
     if (game.belongsTo.toString() !== _userid) {
@@ -329,23 +371,73 @@ app.post("/api/claim-reward", auth, async (req, res) => {
 app.get("/api/latest-game", auth, async (req, res) => {
   try {
     const { _userid } = req.user;
+    const gameType = req.query.gameType;
 
-    const game = await database.getUserGames(_userid);
+    if (!gameType) {
+      return res.status(404).send("Game type needs to be set");
+    }
+
+    const game = await database.getUserGames(_userid, gameType);
 
     if (game.length === 0) {
       return res.status(404).send("No games found");
     }
-    const latestGame = game[game.length - 1];
-    if (latestGame.state !== "done") {
-      delete latestGame.bomb.position;
+
+    const latestGame = game.pop();
+
+    if (
+      latestGame.belongsTo.toString() !== _userid &&
+      gameType === "battleships"
+    ) {
+      const opponent = {
+        id: latestGame.belongsTo,
+        ships: latestGame.ships,
+        clicks: latestGame.clicks,
+      };
+
+      latestGame.ships = latestGame.opponent.ships;
+      latestGame.clicks = latestGame.opponent.clicks;
+      latestGame.opponent = opponent;
     }
+
+    if (latestGame.state !== constants.DONE) {
+      if (latestGame.gameType === "minesweeper") {
+        delete latestGame.bomb.position;
+      }
+      if (latestGame.gameType === "battleships") {
+        delete latestGame.belongsTo;
+        delete latestGame.opponent.ships;
+        latestGame.turn = latestGame.turn.toString() === _userid;
+      }
+    }
+
     return res.status(200).send(latestGame);
   } catch (errors) {
     console.log(errors);
   }
 });
 
+// const t = {
+//   id: ObjectId("gameid"),
+//   belongsTo: ObjectId("person who created it"),
+//   opponent: {
+//     id: ObjectId("opponent id"),
+//     ships: {
+//       5: [1, 2, 3, 4, 5],
+//     },
+//     clicks: [],
+//   },
+//   ships: {
+//     5: [1, 2, 3, 4, 5],
+//   },
+//   clicks: [],
+//   state: "ongoing",
+//   winner: ObjectId('belongs to or opponent.id'),
+//   hasClaimed: true
+// };
+
 app.get("/api/game-history", auth, async (req, res) => {
+  // TODO: support battleships
   try {
     const { _userid } = req.user;
 
@@ -355,11 +447,11 @@ app.get("/api/game-history", auth, async (req, res) => {
       return res.status(404).send("No games found");
     }
 
-    const gameHistory = game.filter((value) => value.state === constants.DONE);
+    const gameHistory = game.filter(
+      (value) =>
+        value.state === constants.DONE && value.gameType === "minesweeper"
+    );
 
-    // if (latestGame.state !== "done") {
-    //   delete latestGame.bomb.position;
-    // }
     return res.status(200).send(gameHistory);
   } catch (errors) {
     console.log(errors);
@@ -367,6 +459,7 @@ app.get("/api/game-history", auth, async (req, res) => {
 });
 
 app.post("/api/balance", auth, async (req, res) => {
+  //TODO: fix once battleship api is finished
   try {
     const { _userid } = req.user;
     const { balance, gameid } = req.body;
@@ -387,7 +480,6 @@ app.post("/api/balance", auth, async (req, res) => {
     if (game.belongsTo.toString() !== _userid) {
       return res.status(403).send("Unathorised access to game");
     }
-    //
 
     if (balance > 0 && game.state !== constants.DONE) {
       return res.status(400).send("Game isn't finished");
@@ -427,7 +519,7 @@ function hasBeenClicked(id, clicks) {
   return clicks.filter((click) => click.position === id).length > 0;
 }
 
-app.get("/api/game/:id/click", auth, async (req, res) => {
+app.get("/api/game/minesweeper/:id/click", auth, async (req, res) => {
   try {
     const { _userid } = req.user;
     const gameid = req.params.id;
@@ -536,6 +628,7 @@ app.get("/api/game/:id/click", auth, async (req, res) => {
 });
 
 app.post("/api/claim-game", auth, async (req, res) => {
+  //TODO: make this work with battleships
   try {
     const { _userid } = req.user;
     const { gameid } = req.body;
@@ -552,6 +645,9 @@ app.post("/api/claim-game", auth, async (req, res) => {
 
     if (!game) {
       return res.status(404).send("Game does not exist");
+    }
+    if (game.gameType !== "minesweeper") {
+      return res.status(404).send("can't claim this type of game");
     }
 
     if (game.belongsTo.toString() !== _userid) {
@@ -598,6 +694,7 @@ function generateBombLocation(bombCount) {
 }
 
 app.post("/api/create-game", auth, async (req, res) => {
+  // TODO: make this work for both games
   const { _userid } = req.user;
   const { bombCount, stake } = req.body;
 
@@ -627,6 +724,7 @@ app.post("/api/create-game", auth, async (req, res) => {
       count: bombCount,
     },
     stake,
+    gameType: "minesweeper",
     clicks: [],
     pool: stake,
     nextClick,
@@ -635,6 +733,101 @@ app.post("/api/create-game", auth, async (req, res) => {
   const gameid = await database.createGame(game);
 
   res.status(200).send(gameid);
+});
+
+io.on("connection", (socket) => {
+  console.log("a user connected");
+
+  socket.on("join-room", (id) => {
+    socket.join(id);
+  });
+
+  socket.on("board-click", async ({ id, token, clickNumber }) => {
+    if (!(id && clickNumber && token) && clickNumber !== 0) return;
+    if (id.length !== 24) return;
+    const hasSession = await database.getSession(token);
+    if (!hasSession) return;
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.TOKEN_KEY);
+    } catch (error) {
+      console.log(error);
+      return;
+    }
+
+    if (!decoded) return;
+
+    const game = await database.getGame(id);
+
+    if (!game) return;
+    if (game.state === constants.DONE) return;
+    if (game.turn.toString() !== decoded._userid) return;
+    const click = await database.addClick(
+      id,
+      {
+        clickNumber,
+        userid: decoded._userid,
+      },
+      "battleships"
+    );
+
+    if (click.modifiedCount === 0) return;
+
+    await database.updateTurn(id, decoded._userid);
+
+    let _game = await database.getGame(id, decoded._userid);
+
+    let clicks = Object.keys(_game.clicks);
+    let shipBlownUpCount = 0;
+    for (const ship of Object.keys(_game.opponent.ships)) {
+      const shipOpponentFilter = _game.opponent.ships[ship].filter((value) =>
+        clicks.includes(value)
+      );
+      shipBlownUpCount += shipOpponentFilter.length === Number(ship) ? 1 : 0;
+      // _game.opponent.ships[ship] = shipOpponentFilter.length === Number(ship)
+    }
+
+    if (shipBlownUpCount === Object.keys(_game.opponent.ships).length) {
+      // user won
+      _game = await database.updateGameState(
+        id,
+        constants.DONE,
+        constants.CLAIMED
+      );
+    } else {
+      clicks = Object.keys(_game.opponent.clicks);
+      shipBlownUpCount = 0;
+      for (const ship of Object.keys(_game.opponent.ships)) {
+        const shipFilter = _game.ships[ship].filter((value) =>
+          clicks.includes(value)
+        );
+        shipBlownUpCount += shipFilter.length === Number(ship) ? 1 : 0;
+        // _game.ships[ship] = shipFilter.length === Number(ship);
+      }
+
+      if (shipBlownUpCount === Object.keys(_game.ships).length) {
+        // opponent won
+        _game = await database.updateGameState(
+          id,
+          constants.DONE,
+          constants.LOST
+        );
+      }
+    }
+
+    if (_game.state !== constants.DONE) {
+      delete _game.belongsTo;
+      delete _game.opponent.ships;
+      _game.turn = _game.turn.toString() === decoded._userid;
+    }
+
+    //ongoing
+    io.to(id).emit("board-click", { game: _game });
+  });
+
+  socket.on("disconnect", () => {
+    console.log("user disconnected");
+  });
 });
 
 app.get("/*", (req, res) => {
