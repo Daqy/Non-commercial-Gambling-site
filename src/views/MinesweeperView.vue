@@ -20,7 +20,6 @@ const gameStore = useGameStore()
 const loadingClick = ref(false)
 
 onMounted(() => {
-  console.log(gameStore.game)
   if (!gameStore.game) {
     gameStore.getLatestGame()
   }

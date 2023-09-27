@@ -26,6 +26,11 @@ const emit = defineEmits<{
 
 const hover = ref(false)
 
+const handleClick = () => {
+  if (props.flip) return
+  emit('squareClick', props.id)
+}
+
 const fipCardStyle = computed(() => {
   return props.flip || props.userid === 1 ? 'transition: all 1s;transform: rotateY(180deg);' : ''
 })
@@ -35,7 +40,7 @@ const fipCardStyle = computed(() => {
   <div
     class="card"
     ref="card"
-    @click="emit('squareClick', id)"
+    @click="handleClick"
     :style="fipCardStyle"
     @mouseover="hover = true"
     @mouseleave="hover = false"

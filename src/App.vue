@@ -11,8 +11,10 @@ import { computed, watch } from 'vue'
 import { useAuthStore } from '~stores/useAuthStore'
 import { useApi } from '~services/api'
 import { routerPathPrettify } from '@/services/routerPathPrettify'
-
+import { socket } from '@/socket'
 const { loading, get } = useApi('/api/get-user')
+
+socket.connect()
 
 const authStore = useAuthStore()
 
