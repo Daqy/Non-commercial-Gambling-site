@@ -3,4 +3,6 @@ module.exports.constants = Object.freeze({
   CLAIMED: "claimed",
   DONE: "done",
   ONGOING: "ongoing",
+  AWAITING: "awaiting",
+  PREP: "prep",
 });

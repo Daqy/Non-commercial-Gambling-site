@@ -33,6 +33,9 @@ const endpoints = {
       value: time,
     });
   },
+  async getGames(gameType = "minesweeper", options) {
+    return await storage().searchAllFor("games", { gameType, ...options });
+  },
   async getUserGames(userid, gameType = "minesweeper") {
     const creator = await storage().searchAllFor("games", {
       belongsTo: new ObjectId(userid),
@@ -136,6 +139,19 @@ const endpoints = {
       key: "gameType",
       value: "minesweeper",
     });
+  },
+  async addToGame(gameid, options) {
+    options.state = constants.PREP;
+    await Promise.all([
+      Object.keys(options).forEach(async (element) => {
+        await storage().update("games", {
+          id: new ObjectId(gameid),
+          key: element,
+          value: options[element],
+        });
+      }),
+    ]);
+    return true;
   },
   async updateGameState(id, state, result, gameType = "minesweeper") {
     await storage().update("games", {

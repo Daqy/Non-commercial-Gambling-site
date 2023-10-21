@@ -18,8 +18,8 @@ const cookieParser = require("cookie-parser");
 const { Server } = require("socket.io");
 const io = new Server(http, {
   cors: {
-    origin: "http://192.168.1.102:5173",
-    // origin: "http://localhost:5173",
+    // origin: "http://192.168.1.102:5173",
+    origin: "http://localhost:5173",
   },
 });
 
@@ -29,6 +29,7 @@ const { database } = require("./endpoint-resolver.js");
 // const { localStore } = require("./localStore.js");
 const auth = require("./middleware/auth.js");
 const { constants } = require("./constants.js");
+const { ObjectId } = require("mongodb");
 
 // const SnowflakeId = require("snowflake-id").default;
 
@@ -120,7 +121,6 @@ app.post("/api/login", async (req, res) => {
       username.includes("@") ? "email" : "username",
       username
     );
-
     if (!(user && (await bcrypt.compare(password, user.password)))) {
       return res.status(400).send("Invalid Credentials");
     }
@@ -382,22 +382,24 @@ app.get("/api/latest-game", auth, async (req, res) => {
     if (game.length === 0) {
       return res.status(404).send("No games found");
     }
-
     const latestGame = game.pop();
 
-    if (
-      latestGame.belongsTo.toString() !== _userid &&
-      gameType === "battleships"
-    ) {
-      const opponent = {
-        id: latestGame.belongsTo,
-        ships: latestGame.ships,
-        clicks: latestGame.clicks,
-      };
+    if (gameType === "battleships") {
+      if (latestGame.state === constants.AWAITING) {
+        delete latestGame.belongsTo;
+        return res.status(200).send(latestGame);
+      }
+      if (latestGame.belongsTo.toString() !== _userid) {
+        const opponent = {
+          id: latestGame.belongsTo,
+          ships: latestGame.ships,
+          clicks: latestGame.clicks,
+        };
 
-      latestGame.ships = latestGame.opponent.ships;
-      latestGame.clicks = latestGame.opponent.clicks;
-      latestGame.opponent = opponent;
+        latestGame.ships = latestGame.opponent.ships;
+        latestGame.clicks = latestGame.opponent.clicks;
+        latestGame.opponent = opponent;
+      }
     }
 
     if (latestGame.state !== constants.DONE) {
@@ -693,6 +695,93 @@ function generateBombLocation(bombCount) {
     .sort((a, b) => 0.5 - Math.random());
 }
 
+app.post("/api/battleships/join", auth, async (req, res) => {
+  const { _userid } = req.user;
+  const { gameid } = req.body;
+
+  if (!gameid) {
+    return res.status(400).send("Missing game id");
+  }
+
+  if (gameid.length != 24) {
+    return res.status(400).send("A valid ID is required");
+  }
+
+  const game = await database.getGame(gameid);
+
+  if (game.gameType !== "battleships") {
+    return res.status(400).send("Unable to join game as its not battleships");
+  }
+
+  if (game.opponent) {
+    return res.status(400).send("Game already has an opponent");
+  }
+
+  const opponent = {
+    id: new ObjectId(_userid),
+    ships: [],
+    clicks: {},
+  };
+
+  const turn =
+    randomIntFromInterval(1, 2) === 1
+      ? new ObjectId(_userid)
+      : new ObjectId(game.belongsTo);
+
+  const addedToGame = await database.addToGame(gameid, {
+    turn,
+    opponent,
+    pool: game.stake * 2,
+  });
+
+  if (!addedToGame) {
+    res.status(400).send("failed to join game");
+  }
+
+  const user = await database.getUser("_id", _userid);
+
+  const updatedBalance = await database.updateBalance(
+    _userid,
+    user.balance - game.stake
+  );
+
+  if (!updatedBalance) {
+    return res.status(400).send("failed to update balance");
+  }
+  io.to(game._id.toString()).emit("user-joined", { game });
+  return res.status(200).send({ gameid: game._id });
+});
+
+app.post("/api/battleships/create-game", auth, async (req, res) => {
+  const { _userid } = req.user;
+  const { stake } = req.body;
+
+  if (!stake) {
+    return res.status(400).send("Missing stake");
+  }
+
+  const usergames = await database.getUserGames(_userid, "battleships");
+  const ongoingGame = usergames.filter((game) => game.state !== constants.DONE);
+
+  if (ongoingGame.length > 0) {
+    return res.status(400).send("User already in a game");
+  }
+
+  const game = {
+    belongsTo: _userid,
+    state: constants.AWAITING,
+    ships: [],
+    stake,
+    gameType: "battleships",
+    clicks: {},
+  };
+
+  const gameid = await database.createGame(game);
+  io.emit("game-created");
+
+  res.status(200).send(gameid);
+});
+
 app.post("/api/create-game", auth, async (req, res) => {
   // TODO: make this work for both games
   const { _userid } = req.user;
@@ -740,6 +829,25 @@ io.on("connection", (socket) => {
 
   socket.on("join-room", (id) => {
     socket.join(id);
+  });
+
+  socket.on("get-games", async () => {
+    const games = await database.getGames("battleships", { state: "awaiting" });
+
+    if (!games) return;
+
+    await Promise.all(
+      games.map(async (game) => {
+        const user = await database.getUser("_id", game.belongsTo.toString());
+        if (!user) {
+          game.belongsTo = "#error";
+        } else {
+          game.belongsTo = user.username;
+        }
+      })
+    );
+
+    io.emit("games", games);
   });
 
   socket.on("board-click", async ({ id, token, clickNumber }) => {
