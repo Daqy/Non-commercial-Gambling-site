@@ -15,7 +15,10 @@ const routeOptions = router.options.routes
 
 const NavigationOptions = computed(() => {
   return routeOptions.filter(
-    (route) => route?.meta?.navigational && props.heading !== routerPathPrettify(route.path)
+    (route) =>
+      route?.meta?.navigational &&
+      route?.meta?.navigateTo &&
+      props.heading !== routerPathPrettify(route.path)
   )
 })
 
@@ -25,7 +28,16 @@ const showDropdown = ref(false)
 <template>
   <div class="main-container">
     <div class="heading-container">
-      <div class="dropdown" @click="showDropdown = !showDropdown">
+      <div
+        class="dropdown"
+        @click="
+          () => {
+            if (route.meta.navigational) {
+              showDropdown = !showDropdown
+            }
+          }
+        "
+      >
         <div class="icon">
           <slot name="icon" />
         </div>

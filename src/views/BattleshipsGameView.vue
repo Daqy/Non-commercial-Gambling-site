@@ -7,6 +7,7 @@ import { useApi } from '@/services/api'
 import { game } from '@/mock/game'
 import { socket, state } from '@/socket'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useRoute } from 'vue-router'
 
 const authStore = useAuthStore()
 
@@ -151,7 +152,7 @@ const handleShipPositionUpdate = ({ id, position, isHorizontal }) => {
 }
 
 const opponentHasClicked = (id: number) => {
-  if (!data.value) return false
+  if (!data.value || data.value.state === 'awaiting') return false
   for (const key of Object.keys(data.value.opponent.clicks)) {
     if (Number(key) === id) {
       return true
@@ -205,14 +206,9 @@ watch(
   }
 )
 
-watch(
-  () => data.value,
-  () => {
-    if (data.value) {
-      socket.emit('join-room', data.value._id)
-    }
-  }
-)
+const route = useRoute()
+
+socket.emit('join-room', route.params.gameid)
 </script>
 
 <template>
@@ -249,7 +245,11 @@ watch(
           <span v-for="number in gridRowCount" :key="number">{{ number }}</span>
         </div>
       </div>
-      <MineGameBoard :loading="false" :perRow="gridRowCount">
+      <MineGameBoard
+        :loading="!loading && data.state === 'awaiting'"
+        :perRow="gridRowCount"
+        message="awaiting player to join..."
+      >
         <BoardSquare
           v-for="index in 64"
           :key="index"

@@ -5,11 +5,12 @@ import { useApi } from '@/services/api'
 
 export const state = reactive({
   connected: false,
-  game: {}
+  game: {},
+  games: []
 })
 
 // "undefined" means the URL will be computed from the `window.location` object
-const URL = 'http://192.168.1.102:3000'
+const URL = 'http://localhost:3000'
 
 export const socket = io(URL, {
   auth: (cb) => {
@@ -32,8 +33,24 @@ socket.on('connect', () => {
   state.connected = true
 })
 
+socket.on('game-created', () => {
+  socket.emit('get-games')
+})
+
 socket.on('disconnect', () => {
   state.connected = false
+})
+
+socket.on('games', (games) => {
+  state.games = games
+})
+
+socket.on('user-joined', async ({ game }) => {
+  const { get } = useApi(`/api/game/${game._id}`)
+
+  get().then((response) => {
+    state.game = response
+  })
 })
 
 socket.on('board-click', async ({ game }) => {

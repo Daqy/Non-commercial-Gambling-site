@@ -11,7 +11,7 @@ const defaultValues = {
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(defaultValues.token)
   const username = ref(defaultValues.username)
-  const balance = ref(defaultValues.balance)
+  const balance = ref<number | null>(defaultValues.balance)
 
   function _reset() {
     token.value = defaultValues.token

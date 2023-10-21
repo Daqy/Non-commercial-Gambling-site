@@ -5,10 +5,12 @@ const props = withDefaults(
   defineProps<{
     perRow?: number
     loading?: boolean
+    message?: string
   }>(),
   {
     loading: false,
-    perRow: 5
+    perRow: 5,
+    message: 'Looking for game...'
   }
 )
 </script>
@@ -19,7 +21,7 @@ const props = withDefaults(
   </div>
   <div class="skeleton-grid-loader" v-else>
     <AppSkeletonLoader height="100%" />
-    <p>Looking for game...</p>
+    <p>{{ message }}</p>
   </div>
 </template>
 

@@ -20,19 +20,25 @@ const router = createRouter({
       path: '/minesweeper',
       name: 'minesweeper',
       component: () => import('~pages/MinesweeperView.vue'),
-      meta: { requiresAuth: true, navigational: true }
+      meta: { requiresAuth: true, navigational: true, navigateTo: true }
     },
     {
       path: '/battleships',
       name: 'battleships',
       component: () => import('~pages/BattleshipsView.vue'),
+      meta: { requiresAuth: true, navigational: true, navigateTo: true }
+    },
+    {
+      path: '/battleships/:gameid',
+      name: 'battleships game',
+      component: () => import('~pages/BattleshipsGameView.vue'),
       meta: { requiresAuth: true, navigational: true }
     },
     {
       path: '/game-history',
       name: 'history',
       component: () => import('~pages/GameHistoryView.vue'),
-      meta: { requiresAuth: true, navigational: true }
+      meta: { requiresAuth: true, navigational: true, navigateTo: true }
     },
     {
       path: '/:pathMatch(.*)*',
