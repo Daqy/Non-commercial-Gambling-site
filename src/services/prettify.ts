@@ -7,6 +7,7 @@ export const prettify = (value: number) => {
   } else if (value >= 0) {
     return value % 1 === 0 ? value : truncate(value, 2)
   }
+  return Number(`-${prettify(value * -1)}`)
 }
 
 function truncate(value: number, point: number) {

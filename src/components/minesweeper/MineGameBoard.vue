@@ -44,6 +44,34 @@ const props = withDefaults(
     transform: translate(-50%, -50%);
   }
 }
+
+.ready {
+  &::after {
+    content: 'user ready';
+    position: absolute;
+    text-transform: capitalize;
+    padding: 0.5rem 1rem;
+    width: calc(100% + 1rem);
+    top: 50%;
+    left: 50%;
+    text-align: center;
+    transform: translate(-50%, -50%);
+    font-size: 1.2rem;
+    background: rgba(0, 0, 0, 0.3);
+  }
+  &::before {
+    content: '';
+    position: absolute;
+    width: calc(100% + 1rem);
+    height: calc(100% + 1rem);
+    left: -0.5rem;
+    top: -0.5rem;
+    // background: var(--color-card-main);
+    background: var(--color-hightlight-green);
+    opacity: 0.1;
+    border-radius: 5px;
+  }
+}
 .grid {
   display: grid;
   gap: 0.5rem;

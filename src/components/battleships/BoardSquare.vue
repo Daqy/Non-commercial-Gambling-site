@@ -48,9 +48,31 @@ const fipCardStyle = computed(() => {
   >
     <div class="front"></div>
     <div class="back">
-      <MineBombTile v-if="hasBoat && flip" :display-icon="displayIcon" />
+      <MineBombTile
+        v-if="hasBoat && flip"
+        :display-icon="displayIcon"
+        :class="{
+          winner:
+            game &&
+            game.state === 'done' &&
+            hasBoat &&
+            !Object.keys(game.clicks)
+              .map((value) => Number(value))
+              .includes(id)
+        }"
+      />
       <div class="plain" v-else>
-        <div class="circle" v-if="userid === 1 && flip"></div>
+        <div
+          class="circle"
+          v-if="
+            (userid === 1 && flip) ||
+            (game &&
+              game.state === 'done' &&
+              Object.keys(game.clicks)
+                .map((value) => Number(value))
+                .includes(id))
+          "
+        ></div>
       </div>
     </div>
   </div>

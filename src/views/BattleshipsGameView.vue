@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onUnmounted, computed, ref, watch } from 'vue'
+import { onUnmounted, computed, ref, watch, onMounted, nextTick } from 'vue'
 import MineGameBoard from '~components/minesweeper/MineGameBoard.vue'
 import BoardSquare from '~components/battleships/BoardSquare.vue'
 import BattleshipShip from '~components/battleships/BattleshipShip.vue'
@@ -7,9 +7,10 @@ import { useApi } from '@/services/api'
 import { game } from '@/mock/game'
 import { socket, state } from '@/socket'
 import { useAuthStore } from '@/stores/useAuthStore'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
+const router = useRouter()
 
 document.documentElement.style.setProperty('--margin-bottom-main-container', '50px')
 
@@ -41,22 +42,31 @@ const createArray = (start: number, stop: number, step = 1) => {
 
 const shipFunctions = ref<{ [id: number]: any }>({})
 const isHovering = ref<number[]>([])
-const onGrid = ref<{ [id: number]: number[] }>({})
+const onGrid = ref<{ [id: number]: number[] }>(JSON.parse(localStorage.getItem('ships')) ?? {})
 
 const getFunctionCalls = (data: { id: number; [fn: string]: any }) => {
   const { id, ...fn } = data
   shipFunctions.value[id] = fn
+
+  if (!!onGrid.value[Number(id)]) {
+    const gridBox =
+      grid.value?.children[1].children[onGrid.value[id][0] - 1].getBoundingClientRect()
+    fn.reposition({ x: gridBox?.x, y: gridBox?.y })
+  }
 }
 
 const placeOnGrid = (id: number) => {
   if (isHovering.value.length === 0) {
     delete onGrid.value[id]
     shipFunctions.value[id].reset()
+    localStorage.setItem('ships', JSON.stringify(onGrid.value))
     return
   }
 
   onGrid.value[id] = isHovering.value
   isHovering.value = []
+
+  localStorage.setItem('ships', JSON.stringify(onGrid.value))
 
   const gridBox = grid.value?.children[1].children[onGrid.value[id][0] - 1].getBoundingClientRect()
   shipFunctions.value[id].reposition({ x: gridBox?.x, y: gridBox?.y })
@@ -165,9 +175,12 @@ const userHasClicked = (id: number) => {
   if (!data.value) return false
   for (const key of Object.keys(data.value.clicks)) {
     if (Number(key) === id) {
-      console.log(key, id)
       return true
     }
+  }
+
+  if (data.value.state === 'done') {
+    return true
   }
   return false
 }
@@ -175,8 +188,18 @@ const userHasClicked = (id: number) => {
 const userHasClickedBoat = (id: number) => {
   if (!data.value) return false
   for (const key of Object.keys(data.value.clicks)) {
-    if (data.value.clicks[key] && Number(key) === id) {
+    if (data.value.clicks[key][0] && Number(key) === id) {
       return true
+    }
+  }
+
+  if (data.value.state === 'done') {
+    for (const ship of Object.keys(data.value.ships)) {
+      for (const position of data.value.opponent.ships[ship]) {
+        if (position === id) {
+          return true
+        }
+      }
     }
   }
   return false
@@ -196,13 +219,29 @@ const handleBoardClick = (id: number) => {
 
   //   }
   // })
-  // console.log(id)
+}
+
+const readyUp = () => {
+  const confirmShipPlacement = useApi('/api/battleship/confirm-placement')
+
+  confirmShipPlacement.post({ gameid: route.params.gameid, position: onGrid.value })
+  localStorage.setItem('ships', JSON.stringify({}))
 }
 
 watch(
   () => state.game,
   () => {
     data.value = state.game
+  }
+)
+
+watch(
+  () => data.value,
+  () => {
+    if (data.value.ready) {
+      onGrid.value = data.value.ships
+      return
+    }
   }
 )
 
@@ -249,6 +288,14 @@ socket.emit('join-room', route.params.gameid)
         :loading="!loading && data.state === 'awaiting'"
         :perRow="gridRowCount"
         message="awaiting player to join..."
+        :class="{
+          ready:
+            !loading &&
+            data.opponent &&
+            !!data.opponent.ready &&
+            data.state !== 'ongoing' &&
+            data.state !== 'done'
+        }"
       >
         <BoardSquare
           v-for="index in 64"
@@ -257,14 +304,25 @@ socket.emit('join-room', route.params.gameid)
           :has-boat="userHasClickedBoat(index)"
           :flip="userHasClicked(index)"
           :userid="2"
+          :game="data"
           @square-click="handleBoardClick(index)"
         />
       </MineGameBoard>
     </section>
 
+    <div v-if="!loading && data.state === 'done'" class="test">
+      <p
+        :class="{
+          win: data.winner === authStore.username,
+          lose: data.winner !== authStore.username
+        }"
+      >
+        {{ data.winner === authStore.username ? 'You won' : 'You lost' }} ${{ data.pool }}
+      </p>
+    </div>
     <section ref="fleet" class="fleet"></section>
     <div
-      v-if="fleetPosition && !loading && data.state === 'prep'"
+      v-if="fleetPosition && !loading && data.state === 'prep' && !data.ready"
       class="ships"
       :style="`top: ${fleetPosition.y}px;left: ${fleetPosition.x}px;width: ${fleetPosition.width}px`"
     >
@@ -281,16 +339,60 @@ socket.emit('join-room', route.params.gameid)
         @position="handleShipPositionUpdate"
         @release="placeOnGrid"
       />
+
       <div class="button-container">
-        <button v-if="Object.keys(onGrid).length === 5" class="button">
+        <button v-if="Object.keys(onGrid).length === 5" class="button" @click="readyUp">
           Confirm Ship Placement
         </button>
+      </div>
+    </div>
+
+    <div
+      v-if="fleetPosition && !loading && data.ready"
+      class="bottomSection"
+      :style="`top: ${fleetPosition.y}px;left: ${fleetPosition.x}px;width: ${fleetPosition.width}px`"
+    >
+      <div
+        v-if="!loading && data.ready && data.state !== 'ongoing' && data.state !== 'done'"
+        class="ready-text"
+      >
+        <p>you are ready</p>
+      </div>
+      <div class="ready-text" v-if="!loading && data.state === 'done'">
+        <button class="button" @click="router.push('/battleships')">Back to games</button>
+      </div>
+      <div class="ready-text" v-if="!loading && data.state === 'ongoing'">
+        <p>{{ data.turn ? 'Your go to select tile' : 'opponents go to select tile' }}</p>
       </div>
     </div>
   </main>
 </template>
 
 <style lang="scss" scoped>
+.bottomSection {
+  position: fixed;
+}
+
+.test {
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  border-radius: 0 0 10px 10px;
+
+  text-transform: capitalize;
+  .win {
+    color: var(--color-hightlight-green);
+  }
+
+  .lose {
+    color: var(--color-bomb-background);
+  }
+}
+
 .game {
   position: relative;
   display: flex;
@@ -308,12 +410,24 @@ socket.emit('join-room', route.params.gameid)
 
 .ships {
   position: fixed;
+}
+
+.ships,
+.ready-text {
   display: flex;
   /* justify-content: space-between; */
   gap: 1.85rem;
   padding: 10px;
   /* justify-items: space-between; */
   /* justify-items: */
+}
+
+.ready-text {
+  height: 65.5px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-transform: capitalize;
 }
 
 .fleet {

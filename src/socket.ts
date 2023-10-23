@@ -53,6 +53,23 @@ socket.on('user-joined', async ({ game }) => {
   })
 })
 
+socket.on('user-ready', async (gameid) => {
+  console.log('ready')
+  const { get } = useApi(`/api/game/${gameid}`)
+
+  get().then((response) => {
+    state.game = response
+  })
+})
+
+socket.on('user-has-won', async () => {
+  const authStore = useAuthStore()
+  const { get } = useApi('/api/get-balance')
+  get().then((res: { balance: number }) => {
+    authStore.balance = res.balance
+  })
+})
+
 socket.on('board-click', async ({ game }) => {
   const { get } = useApi(`/api/game/${game._id}`)
 
