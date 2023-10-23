@@ -245,10 +245,12 @@ app.get("/api/game/:id", auth, async (req, res) => {
         id: game.belongsTo,
         ships: game.ships,
         clicks: game.clicks,
+        ready: game.ready ?? false,
       };
 
       game.ships = game.opponent.ships;
       game.clicks = game.opponent.clicks;
+      game.ready = game.opponent.ready ?? false;
       game.opponent = opponent;
     }
 
@@ -261,6 +263,10 @@ app.get("/api/game/:id", auth, async (req, res) => {
         delete game.belongsTo;
         delete game.opponent.ships;
         game.turn = game.turn.toString() === _userid;
+      }
+    } else {
+      if (game.gameType === "battleships" && game.state === constants.DONE) {
+        game.winner = (await database.getUser("_id", game.winner)).username;
       }
     }
 
@@ -394,10 +400,12 @@ app.get("/api/latest-game", auth, async (req, res) => {
           id: latestGame.belongsTo,
           ships: latestGame.ships,
           clicks: latestGame.clicks,
+          ready: latestGame.ready ?? false,
         };
 
         latestGame.ships = latestGame.opponent.ships;
         latestGame.clicks = latestGame.opponent.clicks;
+        latestGame.ready = latestGame.opponent.ready ?? false;
         latestGame.opponent = opponent;
       }
     }
@@ -411,8 +419,14 @@ app.get("/api/latest-game", auth, async (req, res) => {
         delete latestGame.opponent.ships;
         latestGame.turn = latestGame.turn.toString() === _userid;
       }
+    } else if (
+      latestGame.state === constants.DONE &&
+      latestGame.gameType === "battleships"
+    ) {
+      latestGame.winner = (
+        await database.getUser("_id", latestGame.winner)
+      ).username;
     }
-
     return res.status(200).send(latestGame);
   } catch (errors) {
     console.log(errors);
@@ -719,7 +733,7 @@ app.post("/api/battleships/join", auth, async (req, res) => {
 
   const opponent = {
     id: new ObjectId(_userid),
-    ships: [],
+    ships: {},
     clicks: {},
   };
 
@@ -729,6 +743,7 @@ app.post("/api/battleships/join", auth, async (req, res) => {
       : new ObjectId(game.belongsTo);
 
   const addedToGame = await database.addToGame(gameid, {
+    state: constants.PREP,
     turn,
     opponent,
     pool: game.stake * 2,
@@ -770,7 +785,7 @@ app.post("/api/battleships/create-game", auth, async (req, res) => {
   const game = {
     belongsTo: _userid,
     state: constants.AWAITING,
-    ships: [],
+    ships: {},
     stake,
     gameType: "battleships",
     clicks: {},
@@ -780,6 +795,64 @@ app.post("/api/battleships/create-game", auth, async (req, res) => {
   io.emit("game-created");
 
   res.status(200).send(gameid);
+});
+
+app.post("/api/battleship/confirm-placement", auth, async (req, res) => {
+  const { _userid } = req.user;
+  const { gameid, position } = req.body;
+
+  if (!(gameid && position)) {
+    res.status(400).send("Missing gameid and/or position");
+  }
+
+  if (gameid.length != 24) {
+    return res.status(400).send("A valid ID is required");
+  }
+
+  //position verify
+  //dont allow them to call this twice
+
+  const game = await database.getGame(gameid);
+
+  if (game.gameType !== "battleships") {
+    return res.status(400).send("Unable to join game as its not battleships");
+  }
+
+  let addedToGame;
+
+  if (game.belongsTo.toString() === _userid) {
+    addedToGame = await database.addToGame(gameid, {
+      ready: true,
+      ships: position,
+    });
+  } else {
+    addedToGame = await database.addToGame(gameid, {
+      "opponent.ready": true,
+      "opponent.ships": position,
+    });
+  }
+
+  if (!addedToGame) {
+    res.status(400).send("Failed to ready up");
+  }
+
+  const _game = await database.getGame(gameid);
+
+  if (!(_game.ready && _game.opponent.ready)) {
+    io.to(gameid).emit("user-ready", gameid);
+    return res.status(200).send("one user ready");
+  }
+  gameReady = await database.addToGame(gameid, {
+    state: constants.ONGOING,
+  });
+
+  if (!gameReady) {
+    res.status(400).send("failed to update game state");
+  }
+
+  io.to(gameid).emit("user-ready", gameid);
+
+  res.status(200).send("game start");
 });
 
 app.post("/api/create-game", auth, async (req, res) => {
@@ -878,34 +951,53 @@ io.on("connection", (socket) => {
       },
       "battleships"
     );
-
     if (click.modifiedCount === 0) return;
 
-    await database.updateTurn(id, decoded._userid);
+    let _game = await database.getGame(id);
 
-    let _game = await database.getGame(id, decoded._userid);
-
-    let clicks = Object.keys(_game.clicks);
-    let shipBlownUpCount = 0;
-    for (const ship of Object.keys(_game.opponent.ships)) {
-      const shipOpponentFilter = _game.opponent.ships[ship].filter((value) =>
-        clicks.includes(value)
-      );
-      shipBlownUpCount += shipOpponentFilter.length === Number(ship) ? 1 : 0;
-      // _game.opponent.ships[ship] = shipOpponentFilter.length === Number(ship)
+    if (
+      (_game.belongsTo.toString() === decoded._userid &&
+        !_game.clicks[clickNumber][0]) ||
+      (_game.opponent.id.toString() === decoded._userid &&
+        !_game.opponent.clicks[clickNumber][0])
+    ) {
+      await database.updateTurn(id, decoded._userid);
     }
 
+    _game = await database.getGame(id, decoded._userid);
+
+    let clicks = Object.keys(_game.clicks).map((value) => Number(value));
+    let shipBlownUpCount = 0;
+
+    for (const ship of Object.keys(_game.opponent.ships)) {
+      // console.log(ship);
+      const shipOpponentFilter = _game.opponent.ships[ship].filter((value) => {
+        return clicks.includes(value);
+      });
+      // console.log(shipOpponentFilter);
+      shipBlownUpCount += shipOpponentFilter.length === Number(ship) ? 1 : 0;
+
+      // _game.opponent.ships[ship] = shipOpponentFilter.length === Number(ship)
+    }
     if (shipBlownUpCount === Object.keys(_game.opponent.ships).length) {
       // user won
       _game = await database.updateGameState(
         id,
         constants.DONE,
-        constants.CLAIMED
+        game.belongsTo,
+        "battleships"
       );
+
+      const user = await database.getUser("_id", game.belongsTo.toString());
+      await database.updateBalance(
+        game.belongsTo.toString(),
+        user.balance + game.pool
+      );
+      io.to(id).emit("user-has-won");
     } else {
-      clicks = Object.keys(_game.opponent.clicks);
+      clicks = Object.keys(_game.opponent.clicks).map((value) => Number(value));
       shipBlownUpCount = 0;
-      for (const ship of Object.keys(_game.opponent.ships)) {
+      for (const ship of Object.keys(_game.ships)) {
         const shipFilter = _game.ships[ship].filter((value) =>
           clicks.includes(value)
         );
@@ -918,19 +1010,20 @@ io.on("connection", (socket) => {
         _game = await database.updateGameState(
           id,
           constants.DONE,
-          constants.LOST
+          game.opponent.id,
+          "battleships"
         );
+        const user = await database.getUser("_id", game.opponent.id.toString());
+        await database.updateBalance(
+          game.opponent.id.toString(),
+          user.balance + game.pool
+        );
+        io.to(id).emit("user-has-won");
       }
     }
 
-    if (_game.state !== constants.DONE) {
-      delete _game.belongsTo;
-      delete _game.opponent.ships;
-      _game.turn = _game.turn.toString() === decoded._userid;
-    }
-
     //ongoing
-    io.to(id).emit("board-click", { game: _game });
+    io.to(id).emit("board-click", { game: { _id: _game._id } });
   });
 
   socket.on("disconnect", () => {

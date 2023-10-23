@@ -37,17 +37,26 @@ const endpoints = {
     return await storage().searchAllFor("games", { gameType, ...options });
   },
   async getUserGames(userid, gameType = "minesweeper") {
-    const creator = await storage().searchAllFor("games", {
-      belongsTo: new ObjectId(userid),
+    if (gameType === "minesweeper") {
+      return await storage().searchAllFor("games", {
+        belongsTo: new ObjectId(userid),
+        gameType,
+      });
+    }
+
+    const games = await storage().searchAllFor("games", {
       gameType,
     });
-
-    return creator.length > 0
-      ? creator
-      : await storage().searchAllFor("games", {
-          "opponent.id": new ObjectId(userid),
-          gameType,
-        });
+    let result = [];
+    for (const game of games) {
+      if (
+        game.belongsTo.toString() === userid ||
+        (game.opponent && game.opponent.id.toString() === userid)
+      ) {
+        result.push(game);
+      }
+    }
+    return result;
   },
   async getGame(id) {
     return await storage().searchFor("games", {
@@ -83,6 +92,11 @@ const endpoints = {
       });
     } else {
       const game = await this.getGame(gameid);
+      const totalClicks =
+        Object.keys(game.clicks).length +
+        Object.keys(game.opponent.clicks).length +
+        1;
+
       if (game.belongsTo.toString() === click.userid) {
         const clicks = game.clicks;
 
@@ -94,7 +108,8 @@ const endpoints = {
           }
         }
 
-        clicks[click.clickNumber] = clickInShip;
+        clicks[click.clickNumber] = [clickInShip, totalClicks];
+
         return await storage().update("games", {
           id: new ObjectId(gameid),
           key: "clicks",
@@ -107,14 +122,12 @@ const endpoints = {
       const keys = Object.keys(game.ships);
       let clickInShip = false;
       for (const key of keys) {
-        console.log(key, game.ships[key]);
-
         if (game.ships[key].includes(click.clickNumber)) {
           clickInShip = true;
         }
       }
 
-      clicks[click.clickNumber] = clickInShip;
+      clicks[click.clickNumber] = [clickInShip, totalClicks];
       return await storage().update("games", {
         id: new ObjectId(gameid),
         key: "opponent.clicks",
@@ -141,17 +154,22 @@ const endpoints = {
     });
   },
   async addToGame(gameid, options) {
-    options.state = constants.PREP;
-    await Promise.all([
+    let count = 0;
+    return new Promise((resolve, reject) => {
       Object.keys(options).forEach(async (element) => {
-        await storage().update("games", {
+        const updated = await storage().update("games", {
           id: new ObjectId(gameid),
           key: element,
           value: options[element],
         });
-      }),
-    ]);
-    return true;
+        if (updated.modifiedCount > 0) {
+          count++;
+          if (count === Object.keys(options).length) {
+            resolve(true);
+          }
+        }
+      });
+    });
   },
   async updateGameState(id, state, result, gameType = "minesweeper") {
     await storage().update("games", {
@@ -165,21 +183,11 @@ const endpoints = {
         key: "result",
         value: result,
       });
-      await storage().update("games", {
-        id: new ObjectId(id),
-        key: "opponent.result",
-        value: constants.LOST,
-      });
     } else {
       await storage().update("games", {
         id: new ObjectId(id),
-        key: "result",
-        value: result,
-      });
-      await storage().update("games", {
-        id: new ObjectId(id),
-        key: "opponent.result",
-        value: constants.CLAIMED,
+        key: "winner",
+        value: new ObjectId(result),
       });
     }
     return await this.getGame(id);
