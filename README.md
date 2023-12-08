@@ -1,25 +1,17 @@
-# vue-project
+# Just-bet
 
-This template should help get you started developing with Vue 3 in Vite.
+Just bet is a non commercial gambling website for user enjoyment. Just-bet has two game modes you can play, minesweeper and battleships.
 
-## Recommended IDE Setup
+> _Recreated a previous website I made in `old-website` branch_
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
+## Preview
 
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin) to make the TypeScript language service aware of `.vue` types.
-
-If the standalone TypeScript plugin doesn't feel fast enough to you, Volar has also implemented a [Take Over Mode](https://github.com/johnsoncodehk/volar/discussions/471#discussioncomment-1361669) that is more performant. You can enable it by the following steps:
-
-1. Disable the built-in TypeScript Extension
-    1) Run `Extensions: Show Built-in Extensions` from VSCode's command palette
-    2) Find `TypeScript and JavaScript Language Features`, right click and select `Disable (Workspace)`
-2. Reload the VSCode window by running `Developer: Reload Window` from the command palette.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vitejs.dev/config/).
+<img src='screenshots/minesweeper-play.png' />
+Minesweeper game play, you as the user press tiles trying to avoid clicking the bomb square, the more you click the more you win, but also riskier.
+<img src='screenshots/battleships.png' />
+Battleships game play, you get to vs another user in a game of battleships, winner takes all.
+<img src='screenshots/game-history.png' />
+Game history page, currently this page only supports game history of minesweeper. The page will replay the game how it was played.
 
 ## Project Setup
 
