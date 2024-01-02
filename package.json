@@ -1,0 +1,11 @@
+{
+  "name": "just-bet-react",
+  "version": "1.0.0",
+  "description": "Recreating Just-bet gambling website in react & golang. The API and functionality will also be updated to improve mistakes made in the VUE version.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Daqy",
+  "license": "ISC"
+}
