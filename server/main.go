@@ -5,39 +5,37 @@ import (
 	"net/http"
 	"server/controllers"
 	"server/database"
+	"server/environment"
 
 	"github.com/gin-gonic/gin"
 )
 
-
 func main() {
+	if err := environment.Setup(); err != nil {
+		log.Panicf("Error getting environment variables: %v", err)
+		return
+	}
+
 	if err := database.Setup(); err != nil {
 		log.Panicf("Error setting up databse: %v", err)
+		return
 	}
 
 	router := gin.Default()
 
 	auth := router.Group("/auth")
-	auth.POST("/register", func(ctx *gin.Context) {
-		user := database.User{Username: "Daqy", Email: "c@c.c", Password: "test", Balance: 100}
-		
-		userid, err := database.CreateUser(user)
+	auth.POST("/login", controllers.Login)
+	auth.POST("/register", controllers.Register)
 
-		if err != nil {
-			ctx.JSON(http.StatusNotModified, "")
-		}
-		ctx.JSON(http.StatusOK, userid)
-	})
-	
 	api := router.Group("/api")
-	api.GET("/hello-world", controllers.HelloWorld)
-	api.GET("/get-user", func (ctx *gin.Context) {
+	api.GET("/hello-world", controllers.AuthenticateToken, controllers.HelloWorld)
+	api.GET("/get-user", func (c *gin.Context) {
 		user := database.User{Username: "Daqy"}
 
 		if err := database.FindUser(&user); err != nil {
-			ctx.JSON(http.StatusNotFound, "")
+			c.String(http.StatusNotFound, "Unable to find user")
 		}
-		ctx.JSON(http.StatusOK, user)
+		c.JSON(http.StatusOK, user)
 	})
 
 	

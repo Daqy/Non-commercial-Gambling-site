@@ -2,10 +2,8 @@ package database
 
 import (
 	"context"
-	"log"
-	"os"
+	"server/environment"
 
-	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -13,23 +11,7 @@ import (
 var db *mongo.Database
 
 func Setup() error {
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found")
-	}
-
-	uri := os.Getenv("MONGODB_URI")
-	database := os.Getenv("MONGODB_DATABASE_NAME")
-
-	if uri == "" {
-		log.Fatal("You must set your 'MONGODB_URI' environment variable.")
-	}
-
-	if database  == "" {
-		log.Fatal("You must set your 'MONGODB_DATABASE_NAME' environment variable")
-	}
-
-	
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(uri))
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(environment.Env.MongoDbUri))
 	if err != nil {
 		panic(err)
 	}
@@ -40,7 +22,7 @@ func Setup() error {
 	// 	}
 	// }()
 		
-	db = client.Database(database)
+	db = client.Database(environment.Env.MongoDbName)
 	return nil
 
 	// coll := client.Database(database).Collection("users")
