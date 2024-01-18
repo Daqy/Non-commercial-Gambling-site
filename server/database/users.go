@@ -31,7 +31,7 @@ func AddSession(token Token) (*mongo.InsertOneResult, error) {
 }
 
 func FindSession(token *Token) error {
-	return findOne("session", token)
+	return findOne("sessions", token)
 }
 
 func DeleteSession(token *Token) (*mongo.DeleteResult, error) {

@@ -168,19 +168,20 @@ func Register(c *gin.Context) {
 }
 
 func Logout(c *gin.Context) {
-	var token Token
-
-	if err := json.NewDecoder(c.Request.Body).Decode(&token); err != nil {
-		c.String(http.StatusBadRequest, "Invalid format of body.")
+	iUser, exist := c.Get("user")
+	if !exist {
+		c.String(http.StatusNotModified, "Failed get user information.")
 		return
 	}
 
-	if token.isEmpty() {
-		c.String(http.StatusBadRequest, "Token is required.")
+	user, ok := iUser.(User)
+
+	if !ok {
+		c.String(http.StatusNotModified, "Failed get user information.")
 		return
 	}
 
-	if _, err := database.DeleteSession(&database.Token{Token: token.Token}); err != nil {
+	if _, err := database.DeleteSession(&database.Token{Token: user.Token}); err != nil {
 		c.String(http.StatusNotModified, "Failed to logout.")
 		return
 	}

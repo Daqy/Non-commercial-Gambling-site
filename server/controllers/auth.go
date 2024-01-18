@@ -7,10 +7,17 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Token struct {
 	Token string
+}
+
+type User struct {
+	ID       primitive.ObjectID `bson:"_id,omitempty" json:"omitempty"`
+	Username string             `bson:"username,omitempty" json:"username"`
+	Token    string             `bson:"token,omitempty" json:"username"`
 }
 
 func (t Token) isEmpty() bool {
@@ -58,6 +65,11 @@ func AuthenticateToken(c *gin.Context) {
 		}
 
 		c.String(http.StatusBadRequest, "Token has expired.")
+
+		if _, err := database.DeleteSession(&database.Token{Token: token.Token}); err != nil {
+			c.String(http.StatusNotModified, "Failed to delete session from database.")
+		}
+
 		c.Abort()
 		return
 	}
@@ -66,4 +78,6 @@ func AuthenticateToken(c *gin.Context) {
 		c.String(http.StatusUnauthorized, "Token is no longer valid.")
 		c.Abort()
 	}
+
+	c.Set("user", User{ID: claims.ID, Username: claims.Username, Token: token.Token})
 }
