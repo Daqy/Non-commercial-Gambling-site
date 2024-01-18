@@ -14,8 +14,8 @@ import (
 )
 
 type Claims struct {
-	ID primitive.ObjectID `json:"_id"`
-	Username string `json:"username"`
+	ID       primitive.ObjectID `json:"_id"`
+	Username string             `json:"username"`
 	jwt.RegisteredClaims
 }
 
@@ -29,7 +29,7 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func Login (c *gin.Context) {
+func Login(c *gin.Context) {
 	var credentials database.User
 
 	if err := json.NewDecoder(c.Request.Body).Decode(&credentials); err != nil {
@@ -62,23 +62,21 @@ func Login (c *gin.Context) {
 	expirationTime := time.Now().Add(time.Hour)
 
 	claims := &Claims{
-		ID: *user.ID,
+		ID:       *user.ID,
 		Username: user.Username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
 	}
 
-	
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(environment.Env.JwtTokenSecret))
-	
-	
+
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Failed to create JWT token.")
 		return
 	}
-	
+
 	_, err = database.AddSession(database.Token{Token: tokenString})
 
 	if err != nil {
@@ -90,7 +88,7 @@ func Login (c *gin.Context) {
 	c.JSON(http.StatusOK, Token{Token: tokenString})
 }
 
-func Register (c *gin.Context) {
+func Register(c *gin.Context) {
 	var credentials database.User
 
 	if err := json.NewDecoder(c.Request.Body).Decode(&credentials); err != nil {
@@ -143,14 +141,13 @@ func Register (c *gin.Context) {
 	}
 
 	claims := &Claims{
-		ID: id,
+		ID:       id,
 		Username: credentials.Username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
 	}
 
-	
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(environment.Env.JwtTokenSecret))
 
@@ -158,7 +155,7 @@ func Register (c *gin.Context) {
 		c.String(http.StatusInternalServerError, "Failed to create JWT token.")
 		return
 	}
-	
+
 	_, err = database.AddSession(database.Token{Token: tokenString})
 
 	if err != nil {
@@ -168,4 +165,26 @@ func Register (c *gin.Context) {
 
 	c.SetCookie("token", tokenString, 0, "", "", false, true)
 	c.JSON(http.StatusCreated, Token{Token: tokenString})
+}
+
+func Logout(c *gin.Context) {
+	var token Token
+
+	if err := json.NewDecoder(c.Request.Body).Decode(&token); err != nil {
+		c.String(http.StatusBadRequest, "Invalid format of body.")
+		return
+	}
+
+	if token.isEmpty() {
+		c.String(http.StatusBadRequest, "Token is required.")
+		return
+	}
+
+	if _, err := database.DeleteSession(&database.Token{Token: token.Token}); err != nil {
+		c.String(http.StatusNotModified, "Failed to logout.")
+		return
+	}
+
+	c.SetCookie("token", "", -1, "", "", false, true)
+	c.String(http.StatusCreated, "Successfully logged out.")
 }

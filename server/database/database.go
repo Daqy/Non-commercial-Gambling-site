@@ -15,13 +15,13 @@ func Setup() error {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	// defer func() {
 	// 	if err := client.Disconnect(context.TODO()); err != nil {
 	// 		panic(err)
 	// 	}
 	// }()
-		
+
 	db = client.Database(environment.Env.MongoDbName)
 	return nil
 

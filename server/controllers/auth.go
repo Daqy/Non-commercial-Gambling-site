@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"server/database"
 	"server/environment"
 
 	"github.com/gin-gonic/gin"
@@ -39,10 +40,15 @@ func AuthenticateToken(c *gin.Context) {
 
 	claims := &Claims{}
 
+	if err := database.FindSession(&database.Token{Token: token.Token}); err != nil {
+		c.String(http.StatusUnauthorized, "Token is no longer valid.")
+		c.Abort()
+		return
+	}
+
 	tkn, err := jwt.ParseWithClaims(token.Token, claims, func(t *jwt.Token) (any, error) {
 		return []byte(environment.Env.JwtTokenSecret), nil
 	})
-
 
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {

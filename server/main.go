@@ -26,6 +26,7 @@ func main() {
 	auth := router.Group("/auth")
 	auth.POST("/login", controllers.Login)
 	auth.POST("/register", controllers.Register)
+	auth.POST("/logout", controllers.AuthenticateToken, controllers.Logout)
 
 	api := router.Group("/api")
 	api.GET("/hello-world", controllers.AuthenticateToken, controllers.HelloWorld)

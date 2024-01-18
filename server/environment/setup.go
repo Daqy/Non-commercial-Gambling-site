@@ -10,8 +10,8 @@ import (
 )
 
 type Environemnt struct {
-	MongoDbUri string
-	MongoDbName string 
+	MongoDbUri     string
+	MongoDbName    string
 	JwtTokenSecret string
 }
 

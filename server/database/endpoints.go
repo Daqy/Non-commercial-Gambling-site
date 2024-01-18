@@ -10,7 +10,7 @@ import (
 
 func findOne[T any](collectionName string, query *T) error {
 	collection := db.Collection(collectionName)
-	filter, _:= bson.Marshal(query)
+	filter, _ := bson.Marshal(query)
 
 	err := collection.FindOne(context.TODO(), filter).Decode(query)
 
@@ -31,11 +31,22 @@ func create[T any](collectionName string, data T) (*mongo.InsertOneResult, error
 	result, err := collection.InsertOne(context.TODO(), data)
 
 	if err != nil {
-			fmt.Printf("Failed to insert value.")
-			return nil, err
+		fmt.Printf("Failed to insert value.")
+		return nil, err
 	}
 
-	fmt.Printf("Inserted document with _id: %v\n", result.InsertedID)
+	return result, nil
+}
+
+func delete[T any](collectionName string, data T) (*mongo.DeleteResult, error) {
+	collection := db.Collection(collectionName)
+
+	result, err := collection.DeleteOne(context.TODO(), data)
+
+	if err != nil {
+		fmt.Printf("Failed to insert value.")
+		return nil, err
+	}
 
 	return result, nil
 }
