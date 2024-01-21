@@ -6,11 +6,11 @@ import (
 )
 
 type User struct {
-	ID       *primitive.ObjectID `bson:"_id,omitempty" json:"omitempty"`
+	ID       *primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	Username string              `bson:"username,omitempty" json:"username"`
 	Email    string              `bson:"email,omitempty" json:"email,omitempty"`
-	Password string              `bson:"password,omitempty" json:"password"`
-	Balance  float64             `bson:"balance,omitempty" json:"omitempty"`
+	Password string              `bson:"password,omitempty" json:"password,omitempty"`
+	Balance  float64             `bson:"balance,omitempty" json:"balance"`
 }
 
 type Token struct {

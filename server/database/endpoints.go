@@ -11,7 +11,6 @@ import (
 func findOne[T any](collectionName string, query *T) error {
 	collection := db.Collection(collectionName)
 	filter, _ := bson.Marshal(query)
-
 	err := collection.FindOne(context.TODO(), filter).Decode(query)
 
 	if err != nil {

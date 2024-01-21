@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"net/http"
 	"server/controllers"
 	"server/database"
 	"server/environment"
@@ -30,15 +29,12 @@ func main() {
 
 	api := router.Group("/api")
 	api.GET("/hello-world", controllers.AuthenticateToken, controllers.HelloWorld)
-	api.GET("/get-user", func (c *gin.Context) {
-		user := database.User{Username: "Daqy"}
+	api.GET("/get-user", controllers.AuthenticateToken, controllers.GetUser)
 
-		if err := database.FindUser(&user); err != nil {
-			c.String(http.StatusNotFound, "Unable to find user")
-		}
-		c.JSON(http.StatusOK, user)
-	})
+	game := api.Group("/game")
 
-	
+	minesweeper := game.Group("/minesweeper")
+	minesweeper.GET("/:id", controllers.AuthenticateToken, controllers.GetGame)
+
 	router.Run(":3000")
 }

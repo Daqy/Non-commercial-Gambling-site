@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"server/database"
 	"server/environment"
@@ -168,15 +169,9 @@ func Register(c *gin.Context) {
 }
 
 func Logout(c *gin.Context) {
-	iUser, exist := c.Get("user")
-	if !exist {
-		c.String(http.StatusNotModified, "Failed get user information.")
-		return
-	}
+	user, err := getUserFromRequest(c)
 
-	user, ok := iUser.(User)
-
-	if !ok {
+	if err != nil {
 		c.String(http.StatusNotModified, "Failed get user information.")
 		return
 	}
@@ -188,4 +183,39 @@ func Logout(c *gin.Context) {
 
 	c.SetCookie("token", "", -1, "", "", false, true)
 	c.String(http.StatusCreated, "Successfully logged out.")
+}
+
+func GetUser(c *gin.Context) {
+	user, err := getUserFromRequest(c)
+
+	if err != nil {
+		c.String(http.StatusBadRequest, "Failed get user information.")
+		return
+	}
+
+	result := database.User{ID: &user.ID}
+
+	if err := database.FindUser(&result); err != nil {
+		c.String(http.StatusBadRequest, "Unable to find user from token")
+		return
+	}
+
+	fmt.Println(result.Balance)
+
+	c.JSON(http.StatusOK, database.User{Username: result.Username, Balance: result.Balance})
+}
+
+func getUserFromRequest(c *gin.Context) (User, error) {
+	iUser, exist := c.Get("user")
+	if !exist {
+		return User{}, fmt.Errorf("User doesn't exist on request")
+	}
+
+	user, ok := iUser.(User)
+
+	if !ok {
+		return User{}, fmt.Errorf("Failed to convert user request to User")
+	}
+
+	return user, nil
 }
