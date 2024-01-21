@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
 	"server/database"
 
@@ -73,14 +72,13 @@ func GetGame(c *gin.Context) {
 		panic(err)
 	}
 
-	game := MinesweeperGame{ID: objID}
+	game := MinesweeperGame{ID: objID, GameType: "minesweeper"}
 
 	if err := database.FindGame(&game); err != nil {
 		c.String(http.StatusBadRequest, "Failed to find game")
 		return
 	}
 
-	fmt.Println(game, user.ID)
 	if game.BelongsTo != user.ID {
 		c.String(http.StatusUnauthorized, "Unauthorized access to game")
 		return
@@ -91,4 +89,44 @@ func GetGame(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, game)
+}
+
+func GetBombLocations(c *gin.Context) {
+	user, err := getUserFromRequest(c)
+
+	if err != nil {
+		c.String(http.StatusBadRequest, "Failed get user information.")
+		return
+	}
+
+	gameid := c.Param("id")
+
+	if gameid == "" {
+		c.String(http.StatusBadRequest, "ID must be provided.")
+		return
+	}
+
+	if len(gameid) != 24 {
+		c.String(http.StatusBadRequest, "ID must be provided.")
+		return
+	}
+
+	objID, err := primitive.ObjectIDFromHex(gameid)
+	if err != nil {
+		panic(err)
+	}
+
+	game := MinesweeperGame{ID: objID, GameType: "minesweeper"}
+
+	if err := database.FindGame(&game); err != nil {
+		c.String(http.StatusBadRequest, "Failed to find game")
+		return
+	}
+
+	if game.BelongsTo != user.ID {
+		c.String(http.StatusUnauthorized, "Unauthorized access to game")
+		return
+	}
+
+	c.JSON(http.StatusOK, game.Bomb.Position)
 }
