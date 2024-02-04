@@ -11,3 +11,7 @@ type GameId struct {
 func FindGame[T interface{}](game *T) error {
 	return findOne("games", game)
 }
+
+func FindGames[T interface{}](games *T) ([]T, error) {
+	return findMany("games", games)
+}

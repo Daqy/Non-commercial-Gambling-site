@@ -91,7 +91,33 @@ func GetGame(c *gin.Context) {
 	c.JSON(http.StatusOK, game)
 }
 
-func GetBombLocations(c *gin.Context) {
+// func GetBombLocations(c *gin.Context) {
+// 	user, err := getUserFromRequest(c)
+
+// 	if err != nil {
+// 		c.String(http.StatusBadRequest, "Failed get user information.")
+// 		return
+// 	}
+
+// 	query := MinesweeperGame{BelongsTo: user.ID, GameType: "minesweeper"}
+// 	games := []MinesweeperGame{}
+
+// 	if err := database.FindGames(&games, &query); err != nil {
+// 		c.String(http.StatusBadRequest, "Failed to find game")
+// 		return
+// 	}
+
+// 	if len(games) == 0 {
+// 		c.String(http.StatusUnauthorized, "No games found")
+// 		return
+// 	}
+
+// 	// game := games[0]
+
+// 	c.JSON(http.StatusOK, games)
+// }
+
+func GetLatestGame(c *gin.Context) {
 	user, err := getUserFromRequest(c)
 
 	if err != nil {
@@ -99,34 +125,23 @@ func GetBombLocations(c *gin.Context) {
 		return
 	}
 
-	gameid := c.Param("id")
-
-	if gameid == "" {
-		c.String(http.StatusBadRequest, "ID must be provided.")
-		return
-	}
-
-	if len(gameid) != 24 {
-		c.String(http.StatusBadRequest, "ID must be provided.")
-		return
-	}
-
-	objID, err := primitive.ObjectIDFromHex(gameid)
+	query := MinesweeperGame{BelongsTo: user.ID, GameType: "minesweeper"}
+	games, err := database.FindGames(&query)
 	if err != nil {
-		panic(err)
-	}
-
-	game := MinesweeperGame{ID: objID, GameType: "minesweeper"}
-
-	if err := database.FindGame(&game); err != nil {
 		c.String(http.StatusBadRequest, "Failed to find game")
 		return
 	}
 
-	if game.BelongsTo != user.ID {
-		c.String(http.StatusUnauthorized, "Unauthorized access to game")
+	if len(games) == 0 {
+		c.String(http.StatusUnauthorized, "No games found")
 		return
 	}
 
-	c.JSON(http.StatusOK, game.Bomb.Position)
+	latestGame := games[0]
+
+	if latestGame.State == "ongoing" {
+		latestGame.Bomb.Position = nil
+	}
+
+	c.JSON(http.StatusOK, latestGame)
 }
