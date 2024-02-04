@@ -91,32 +91,6 @@ func GetGame(c *gin.Context) {
 	c.JSON(http.StatusOK, game)
 }
 
-// func GetBombLocations(c *gin.Context) {
-// 	user, err := getUserFromRequest(c)
-
-// 	if err != nil {
-// 		c.String(http.StatusBadRequest, "Failed get user information.")
-// 		return
-// 	}
-
-// 	query := MinesweeperGame{BelongsTo: user.ID, GameType: "minesweeper"}
-// 	games := []MinesweeperGame{}
-
-// 	if err := database.FindGames(&games, &query); err != nil {
-// 		c.String(http.StatusBadRequest, "Failed to find game")
-// 		return
-// 	}
-
-// 	if len(games) == 0 {
-// 		c.String(http.StatusUnauthorized, "No games found")
-// 		return
-// 	}
-
-// 	// game := games[0]
-
-// 	c.JSON(http.StatusOK, games)
-// }
-
 func GetLatestGame(c *gin.Context) {
 	user, err := getUserFromRequest(c)
 

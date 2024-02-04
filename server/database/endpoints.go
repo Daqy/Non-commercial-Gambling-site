@@ -43,16 +43,6 @@ func findMany[T any](collectionName string, query *T) ([]T, error) {
 		panic(err)
 	}
 
-	// Prints the results of the find operation as structs
-	// for _, result := range results {
-	// 	cursor.Decode(&result)
-	// 	output, err := json.MarshalIndent(result, "", "    ")
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// 	fmt.Printf("%s\n", output)
-	// }
-
 	return results, nil
 }
 

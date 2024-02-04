@@ -35,7 +35,6 @@ func main() {
 
 	minesweeper := game.Group("/minesweeper")
 	minesweeper.GET("/:id", controllers.AuthenticateToken, controllers.GetGame)
-	// minesweeper.GET("/:id/bomb-location", controllers.AuthenticateToken, controllers.GetBombLocations)
 	minesweeper.GET("/latest-game", controllers.AuthenticateToken, controllers.GetLatestGame)
 
 	router.Run(":3000")
