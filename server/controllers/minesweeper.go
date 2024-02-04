@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 	"server/database"
 
@@ -118,4 +119,19 @@ func GetLatestGame(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, latestGame)
+}
+
+func getMinesweeperHistory(user User) ([]MinesweeperGame, error) {
+	query := MinesweeperGame{BelongsTo: user.ID, GameType: "minesweeper", State: "done"}
+	games, err := database.FindGames(&query)
+
+	if err != nil {
+		return nil, errors.New("Failed to find game")
+	}
+
+	if len(games) == 0 {
+		return nil, errors.New("No games found")
+	}
+
+	return games, nil
 }

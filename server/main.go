@@ -32,6 +32,7 @@ func main() {
 	api.GET("/get-user", controllers.AuthenticateToken, controllers.GetUser)
 
 	game := api.Group("/game")
+	game.GET("/game-history", controllers.AuthenticateToken, controllers.GetGameHistory)
 
 	minesweeper := game.Group("/minesweeper")
 	minesweeper.GET("/:id", controllers.AuthenticateToken, controllers.GetGame)
@@ -39,3 +40,6 @@ func main() {
 
 	router.Run(":3000")
 }
+
+// ----- TODO -------
+// Only return required values
