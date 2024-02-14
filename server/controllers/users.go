@@ -48,9 +48,10 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	user := database.User{Username: credentials.Username, Email: credentials.Email}
+	query := database.User{Username: credentials.Username, Email: credentials.Email}
+	var user database.User
 
-	if err := database.FindUser(&user); err != nil {
+	if err := database.FindUser(query, &user); err != nil {
 		c.String(http.StatusNotFound, "Invalid username or password.")
 		return
 	}
@@ -112,7 +113,7 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	if err := database.FindUser(&database.User{Username: credentials.Username}); err == nil {
+	if err := database.FindUser(database.User{Username: credentials.Username}, &database.User{}); err == nil {
 		c.String(http.StatusNotFound, "User already Exist.")
 		return
 	}
@@ -193,14 +194,13 @@ func GetUser(c *gin.Context) {
 		return
 	}
 
-	result := database.User{ID: &user.ID}
+	query := database.User{ID: &user.ID}
+	var result database.User
 
-	if err := database.FindUser(&result); err != nil {
+	if err := database.FindUser(query, &result); err != nil {
 		c.String(http.StatusBadRequest, "Unable to find user from token")
 		return
 	}
-
-	fmt.Println(result.Balance)
 
 	c.JSON(http.StatusOK, database.User{Username: result.Username, Balance: result.Balance})
 }

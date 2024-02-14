@@ -8,10 +8,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func findOne[T any](collectionName string, query *T) error {
+func findOne[Q any, R any](collectionName string, query Q, result *R) error {
 	collection := db.Collection(collectionName)
 	filter, _ := bson.Marshal(query)
-	err := collection.FindOne(context.TODO(), filter).Decode(query)
+	err := collection.FindOne(context.TODO(), filter).Decode(result)
 
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -24,7 +24,7 @@ func findOne[T any](collectionName string, query *T) error {
 	return nil
 }
 
-func findMany[T any](collectionName string, query *T) ([]T, error) {
+func findMany[Q any, R any](collectionName string, query Q, result *R) ([]R, error) {
 	collection := db.Collection(collectionName)
 	filter, _ := bson.Marshal(query)
 
@@ -37,7 +37,7 @@ func findMany[T any](collectionName string, query *T) ([]T, error) {
 		}
 		panic(err)
 	}
-	var results []T
+	var results []R
 
 	if err = cursor.All(context.TODO(), &results); err != nil {
 		panic(err)
@@ -48,7 +48,6 @@ func findMany[T any](collectionName string, query *T) ([]T, error) {
 
 func create[T any](collectionName string, data T) (*mongo.InsertOneResult, error) {
 	collection := db.Collection(collectionName)
-
 	result, err := collection.InsertOne(context.TODO(), data)
 
 	if err != nil {
@@ -66,6 +65,27 @@ func delete[T any](collectionName string, data T) (*mongo.DeleteResult, error) {
 
 	if err != nil {
 		fmt.Printf("Failed to insert value.")
+		return nil, err
+	}
+
+	return result, nil
+}
+
+type updateGeneric struct {
+	Key   string
+	Value any
+}
+
+func update[Q any](collectionName string, query Q, data updateGeneric) (*mongo.UpdateResult, error) {
+	collection := db.Collection(collectionName)
+	filter, _ := bson.Marshal(query)
+
+	update := bson.D{{"$set", bson.D{{data.Key, data.Value}}}}
+
+	result, err := collection.UpdateOne(context.TODO(), filter, update)
+
+	if err != nil {
+		fmt.Printf("Failed to update value.")
 		return nil, err
 	}
 

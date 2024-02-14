@@ -18,8 +18,8 @@ type Token struct {
 	Token string              `bson:"token,omitempty" json:"token"`
 }
 
-func FindUser(user *User) error {
-	return findOne("users", user)
+func FindUser(user User, result *User) error {
+	return findOne("users", user, result)
 }
 
 func CreateUser(user User) (*mongo.InsertOneResult, error) {
@@ -30,10 +30,17 @@ func AddSession(token Token) (*mongo.InsertOneResult, error) {
 	return create("sessions", token)
 }
 
-func FindSession(token *Token) error {
-	return findOne("sessions", token)
+func FindSession(token Token, result *Token) error {
+	return findOne("sessions", token, result)
 }
 
 func DeleteSession(token *Token) (*mongo.DeleteResult, error) {
 	return delete("sessions", token)
+}
+
+func UpdateUserBalance(user User, balance float64) (*mongo.UpdateResult, error) {
+	return update("users", user, updateGeneric{
+		Key:   "balance",
+		Value: balance,
+	})
 }

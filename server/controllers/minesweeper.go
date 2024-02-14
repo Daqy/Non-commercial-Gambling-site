@@ -1,51 +1,42 @@
 package controllers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"server/database"
+	"server/shared"
+	"server/utils"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type Click struct {
-	Position int16   `bson:"position,omitempty" json:"position,omitempty"`
-	Earned   float64 `bson:"earned,omitempty" json:"earned,omitempty"`
-}
-
 type Bomb struct {
-	Position []int16 `bson:"position,omitempty" json:"position,omitempty"`
-	Count    int16   `bson:"count,omitempty" json:"count,omitempty"`
+	Position []int `bson:"position,omitempty" json:"position,omitempty"`
+	Count    int   `bson:"count,omitempty" json:"count,omitempty"`
 }
 
 type MinesweeperGameWithOutBomb struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	BelongsTo primitive.ObjectID `bson:"belongsTo,omitempty" json:"belongsTo,omitempty"`
 	State     string             `bson:"state,omitempty" json:"state,omitempty"`
-	Stake     int64              `bson:"stake,omitempty" json:"stake,omitempty"`
+	Stake     int                `bson:"stake,omitempty" json:"stake,omitempty"`
 	Pool      float64            `bson:"pool,omitempty" json:"pool,omitempty"`
 	GameType  string             `bson:"gameType,omitempty" json:"gameType,omitempty"`
-	Clicks    []Click            `bson:"clicks,omitempty" json:"clicks,omitempty"`
+	Clicks    []shared.Click     `bson:"clicks,omitempty" json:"clicks,omitempty"`
 }
 
 type MinesweeperGame struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	BelongsTo primitive.ObjectID `bson:"belongsTo,omitempty" json:"belongsTo,omitempty"`
 	State     string             `bson:"state,omitempty" json:"state,omitempty"`
-	Stake     int64              `bson:"stake,omitempty" json:"stake,omitempty"`
+	Stake     int                `bson:"stake,omitempty" json:"stake,omitempty"`
 	Pool      float64            `bson:"pool,omitempty" json:"pool,omitempty"`
 	GameType  string             `bson:"gameType,omitempty" json:"gameType,omitempty"`
-	Clicks    []Click            `bson:"clicks,omitempty" json:"clicks,omitempty"`
+	Clicks    []shared.Click     `bson:"clicks,omitempty" json:"clicks,omitempty"`
 	Bomb      Bomb               `bson:"bomb,omitempty" json:"bomb,omitempty"`
-}
-
-func (g MinesweeperGame) MarshalBSON() ([]byte, error) {
-	if len(g.Bomb.Position) == 0 && g.Bomb.Count == 0 {
-		return bson.Marshal(MinesweeperGameWithOutBomb{ID: g.ID, BelongsTo: g.BelongsTo, State: g.State, Stake: g.Stake, Pool: g.Pool, GameType: g.GameType, Clicks: g.Clicks})
-	}
-	return bson.Marshal(g)
 }
 
 func GetGame(c *gin.Context) {
@@ -73,9 +64,10 @@ func GetGame(c *gin.Context) {
 		panic(err)
 	}
 
-	game := MinesweeperGame{ID: objID, GameType: "minesweeper"}
+	query := MinesweeperGameWithOutBomb{ID: objID, GameType: "minesweeper"}
+	var game MinesweeperGame
 
-	if err := database.FindGame(&game); err != nil {
+	if err := database.FindGame(query, &game); err != nil {
 		c.String(http.StatusBadRequest, "Failed to find game")
 		return
 	}
@@ -100,8 +92,10 @@ func GetLatestGame(c *gin.Context) {
 		return
 	}
 
-	query := MinesweeperGame{BelongsTo: user.ID, GameType: "minesweeper"}
-	games, err := database.FindGames(&query)
+	query := MinesweeperGameWithOutBomb{BelongsTo: user.ID, GameType: "minesweeper"}
+	var result MinesweeperGame
+
+	games, err := database.FindGames(query, &result)
 	if err != nil {
 		c.String(http.StatusBadRequest, "Failed to find game")
 		return
@@ -123,7 +117,9 @@ func GetLatestGame(c *gin.Context) {
 
 func getMinesweeperHistory(user User) ([]MinesweeperGame, error) {
 	query := MinesweeperGame{BelongsTo: user.ID, GameType: "minesweeper", State: "done"}
-	games, err := database.FindGames(&query)
+	var result MinesweeperGame
+
+	games, err := database.FindGames(query, &result)
 
 	if err != nil {
 		return nil, errors.New("Failed to find game")
@@ -134,4 +130,187 @@ func getMinesweeperHistory(user User) ([]MinesweeperGame, error) {
 	}
 
 	return games, nil
+}
+
+type CreateGameInfo struct {
+	BombCount int `json:"bombCount,omitempty"`
+	Stake     int `json:"stake,omitempty"`
+}
+
+func CreateGame(c *gin.Context) {
+	user, err := getUserFromRequest(c)
+
+	if err != nil {
+		c.String(http.StatusBadRequest, "Failed get user information.")
+		return
+	}
+
+	var gameInfo CreateGameInfo
+
+	if err := json.NewDecoder(c.Request.Body).Decode(&gameInfo); err != nil {
+		c.String(http.StatusBadRequest, "Invalid format of body.")
+		return
+	}
+
+	if gameInfo.BombCount == 0 {
+		c.String(http.StatusBadRequest, "Bomb count must not be empty.")
+		return
+	}
+
+	if gameInfo.Stake == 0 {
+		c.String(http.StatusBadRequest, "Stake must not be empty.")
+		return
+	}
+
+	query := MinesweeperGameWithOutBomb{BelongsTo: user.ID, GameType: "minesweeper", State: "ongoing"}
+	var result MinesweeperGame
+
+	games, err := database.FindGames(query, &result)
+
+	if err != nil {
+		c.String(http.StatusBadRequest, "Failed to find game")
+		return
+	}
+
+	if len(games) != 0 {
+		c.String(http.StatusForbidden, "User is already in a game")
+		return
+	}
+
+	game := MinesweeperGame{
+		BelongsTo: user.ID,
+		State:     "ongoing",
+		Stake:     gameInfo.Stake,
+		Pool:      float64(gameInfo.Stake),
+		GameType:  "minesweeper",
+		Bomb: Bomb{
+			Position: utils.GenerateBombPosition(gameInfo.BombCount),
+			Count:    gameInfo.BombCount,
+		},
+	}
+
+	gameModified, err := database.CreateGame(game)
+
+	if err != nil {
+		c.String(http.StatusNotModified, "Failed to create game.")
+		return
+	}
+
+	c.JSON(http.StatusCreated, gameModified)
+}
+
+func GameClick(c *gin.Context) {
+	user, err := getUserFromRequest(c)
+
+	if err != nil {
+		c.String(http.StatusBadRequest, "Failed get user information.")
+		return
+	}
+
+	gameid := c.Param("id")
+
+	if gameid == "" {
+		c.String(http.StatusBadRequest, "Game id is required for this request.")
+		return
+	}
+
+	if len(gameid) != 24 {
+		c.String(http.StatusBadRequest, "ID must be provided.")
+		return
+	}
+
+	ClickPositionString, exist := c.Get("clickPosition")
+
+	if !exist {
+		c.String(http.StatusBadRequest, "Failed to pass in click position.")
+		return
+	}
+
+	clickPosition, err := strconv.Atoi(ClickPositionString.(string))
+
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	objID, err := primitive.ObjectIDFromHex(gameid)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	query := MinesweeperGameWithOutBomb{ID: objID, GameType: "minesweeper"}
+	var game MinesweeperGame
+
+	if err := database.FindGame(query, &game); err != nil {
+		c.String(http.StatusBadRequest, "Failed to find game")
+		return
+	}
+
+	if game.BelongsTo != user.ID {
+		c.String(http.StatusUnauthorized, "Unauthorized access to game.")
+		return
+	}
+
+	if game.State == "done" {
+		c.String(http.StatusForbidden, "Game is finished.")
+		return
+	}
+
+	if utils.HasBeenClickedMinesweeper(clickPosition, game.Clicks) {
+		c.String(http.StatusBadRequest, "Position has already been clicked.")
+		return
+	}
+
+	chanceOfWinning := utils.GetPercentageOfWinningGame(25, len(game.Clicks)+1, game.Bomb.Count)
+
+	pool := float64((1 / chanceOfWinning) * game.Stake)
+	earned := pool - game.Pool
+
+	clicks := append(game.Clicks, shared.Click{
+		Position: clickPosition,
+		Earned:   earned,
+	})
+
+	database.AddClick(MinesweeperGameWithOutBomb{ID: objID, GameType: "minesweeper"}, clicks)
+
+	// Game lost (bomb clicked)
+	if utils.ValueInArray(game.Bomb.Position, clickPosition) {
+		database.UpdateState(MinesweeperGameWithOutBomb{ID: objID, GameType: "minesweeper"}, "done")
+		c.JSON(http.StatusOK, game)
+		return
+	}
+
+	database.UpdatePool(MinesweeperGameWithOutBomb{ID: objID, GameType: "minesweeper"}, pool)
+
+	// Game Won
+	// 25 = default board size (won't have the option of changing it rn)
+	if len(game.Clicks)+1 == 25-game.Bomb.Count {
+		database.UpdateState(MinesweeperGameWithOutBomb{ID: objID, GameType: "minesweeper"}, "done")
+
+		query := database.User{ID: &user.ID}
+		var result database.User
+
+		if err := database.FindUser(query, &result); err != nil {
+			c.String(http.StatusBadRequest, "Unable to find user from token")
+			return
+		}
+
+		database.UpdateUserBalance(query, result.Balance+earned)
+		c.JSON(http.StatusOK, game)
+		return
+	}
+
+	// Continue Game (get latest game version)
+	query = MinesweeperGameWithOutBomb{ID: objID, GameType: "minesweeper"}
+	if err := database.FindGame(query, &game); err != nil {
+		c.String(http.StatusBadRequest, "Failed to find game")
+		return
+	}
+
+	if game.State == "ongoing" {
+		game.Bomb.Position = nil
+	}
+
+	c.JSON(http.StatusOK, game)
 }

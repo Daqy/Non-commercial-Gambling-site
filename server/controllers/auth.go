@@ -47,7 +47,7 @@ func AuthenticateToken(c *gin.Context) {
 
 	claims := &Claims{}
 
-	if err := database.FindSession(&database.Token{Token: token.Token}); err != nil {
+	if err := database.FindSession(database.Token{Token: token.Token}, &database.Token{}); err != nil {
 		c.String(http.StatusUnauthorized, "Token is no longer valid.")
 		c.Abort()
 		return
