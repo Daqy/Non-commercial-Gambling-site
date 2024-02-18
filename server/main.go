@@ -28,7 +28,7 @@ func main() {
 	auth.POST("/logout", controllers.AuthenticateToken, controllers.Logout)
 
 	api := router.Group("/api")
-	api.GET("/hello-world", controllers.AuthenticateToken, controllers.HelloWorld)
+	api.GET("/hello-world", controllers.HelloWorld)
 	api.GET("/get-user", controllers.AuthenticateToken, controllers.GetUser)
 
 	game := api.Group("/game")

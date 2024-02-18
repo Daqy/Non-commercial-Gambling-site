@@ -4,6 +4,11 @@
   --color-card-background: #1d2839;
   --color-card-highlight: #283346;
   --color-important-text: white;
+  --color-card-subtle: #222c3d;
+  --color-card-highlight-hover: #1d2534;
+  --color-highlight-primary: #02ff65;
+  --color-highlight-primary-hover: #139c23;
+  --color-error: #ff3355;
 }
 
 *,
@@ -16,6 +21,7 @@
 
 body {
   height: 100vh;
+  font-weight: bold;
   width: 100vw;
   overflow: hidden;
   color: var(--color-text-main);
