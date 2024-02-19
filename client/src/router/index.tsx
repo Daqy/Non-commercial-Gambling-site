@@ -20,6 +20,7 @@ export default function Router({
   const dispatch = useDispatch();
 
   useEffect(() => {
+    if (!isAuth) return;
     axios
       .get("/api/get-user")
       .then(async (response) => {

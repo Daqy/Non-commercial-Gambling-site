@@ -1,5 +1,5 @@
-import { useState } from "react";
 import * as S from "./index.styles";
+import { useState } from "react";
 import AppInput from "~components/input";
 import AppButton from "~components/button";
 import axios from "axios";
@@ -9,13 +9,24 @@ import { useDispatch } from "react-redux";
 import { setToken } from "~store/auth";
 import { updateUsername, updateBalance } from "~store/user";
 
-export default function Login() {
+export default function Register() {
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const form = useValidation({
+    username: {
+      $value: username,
+      isEmpty: {
+        $validator: (value: string) => {
+          return !!value;
+        },
+        $message: "Username is required",
+      },
+    },
     email: {
       $value: email,
       isEmpty: {
@@ -40,9 +51,24 @@ export default function Login() {
         $message: "Password is required",
       },
     },
+    confirmPassword: {
+      $value: confirmPassword,
+      isEmpty: {
+        $validator: (value: string) => {
+          return !!value;
+        },
+        $message: "Password is required",
+      },
+      isEqual: {
+        $validator: (value: string) => {
+          return value === password;
+        },
+        $message: "Password must match",
+      },
+    },
   });
 
-  const login = (e) => {
+  const register = (e) => {
     e.preventDefault();
     if (form.$anyInvalids) {
       form.$touch();
@@ -51,8 +77,9 @@ export default function Login() {
     setLoading(true);
 
     axios
-      .post("/auth/login", {
-        username: email,
+      .post("/auth/register", {
+        username: username,
+        email: email,
         password: password,
       })
       .then(async (response) => {
@@ -70,8 +97,16 @@ export default function Login() {
   return (
     <S.container>
       <S.inputContainer>
-        {/* {validation} */}
-        <form onSubmit={login}>
+        <form onSubmit={register}>
+          <AppInput
+            label="username"
+            onChange={(e) => {
+              setUsername(e.target.value);
+              form.username.$touch();
+            }}
+            validation={form.username}
+            placeholder="Enter your username..."
+          />
           <AppInput
             label="email"
             onChange={(e) => {
@@ -91,11 +126,21 @@ export default function Login() {
             placeholder="Enter your password..."
             type="password"
           />
+          <AppInput
+            label="confirm password"
+            onChange={(e) => {
+              setConfirmPassword(e.target.value);
+              form.confirmPassword.$touch();
+            }}
+            validation={form.confirmPassword}
+            placeholder="Enter your password..."
+            type="password"
+          />
           <AppButton type="submit" loading={loading}>
-            login
+            register
           </AppButton>
           <S.register>
-            Don't have an account? <Link to="/register">Sign up</Link>
+            Already have an account? <Link to="/login">Sign in</Link>
           </S.register>
         </form>
       </S.inputContainer>
