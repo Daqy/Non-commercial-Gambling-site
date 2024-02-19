@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import Login from "~pages/login";
 import Register from "~pages/register";
 import Minesweeper from "~pages/minesweeper";
+import History from "~pages/history";
 
 export const routes = [
   {
@@ -27,6 +28,14 @@ export const routes = [
     path: "/minesweeper",
     name: "minesweeper",
     component: <Minesweeper />,
+    meta: {
+      authRequired: true,
+    },
+  },
+  {
+    path: "/game-history",
+    name: "history",
+    component: <History />,
     meta: {
       authRequired: true,
     },

@@ -1,4 +1,3 @@
-// import { routes } from "@/router/routes";
 import * as S from "./index.styles";
 import { useState } from "react";
 import { createPortal } from "react-dom";
@@ -45,7 +44,14 @@ export default function Dropdown({
           createPortal(
             <S.dropdown>
               {routes.map((route, index) => (
-                <S.dropdownItem key={index}>{route}</S.dropdownItem>
+                <S.dropdownItem
+                  key={index}
+                  to={route.path}
+                  onClick={() => setOpen(false)}
+                >
+                  <Icon icon={CustomIcons[route.name]} />
+                  {route.name}
+                </S.dropdownItem>
               ))}
             </S.dropdown>,
             teleportTo.current

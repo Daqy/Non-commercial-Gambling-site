@@ -1,5 +1,5 @@
 export const prettifyTitle = (title: string) => {
-  return title.replaceAll(/(\W?\d?)+/g, "");
+  return title.replaceAll("-", " ").replaceAll(/([^\w\s\d])+/g, "");
 };
 
 export const prettifyCurrency = (value: number) => {

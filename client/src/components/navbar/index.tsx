@@ -19,7 +19,7 @@ export default function Nav(props) {
       (route) =>
         !location.pathname.includes(route.name) && !route.meta?.hideDropdown
     )
-    .map((route) => route.name);
+    .map((route) => ({ name: prettifyTitle(route.path), path: route.path }));
 
   const dropdownIsDisabled =
     routes.filter((route) => route.path === location.pathname)[0]?.meta

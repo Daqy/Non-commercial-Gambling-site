@@ -1,5 +1,6 @@
 import styled from "styled-components";
 import { Icon } from "@iconify/react";
+import { Link } from "react-router-dom";
 
 export const container = styled.div`
   display: flex;
@@ -26,12 +27,20 @@ export const dropdown = styled.div`
   border-radius: 0px 0px 10px 10px;
 `;
 
-export const dropdownItem = styled.div`
+export const dropdownItem = styled(Link)`
+  text-decoration: none;
   display: flex;
   align-items: center;
   padding: 1rem;
   min-width: 250px;
   text-transform: capitalize;
+  color: var(--color-important-text);
+
+  > svg {
+    width: 2rem;
+    height: 2rem;
+    margin-right: 0.5rem;
+  }
 
   &:hover {
     cursor: pointer;
