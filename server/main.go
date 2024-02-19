@@ -23,6 +23,7 @@ func main() {
 	router := gin.Default()
 
 	auth := router.Group("/auth")
+	auth.GET("/", controllers.AuthenticateToken, controllers.HandleAuth)
 	auth.POST("/login", controllers.Login)
 	auth.POST("/register", controllers.Register)
 	auth.POST("/logout", controllers.AuthenticateToken, controllers.Logout)

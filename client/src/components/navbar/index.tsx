@@ -2,12 +2,17 @@ import * as S from "./index.styles";
 import { routes } from "~router/routes";
 import { useLocation } from "react-router-dom";
 import Dropdown from "~components/dropdown";
-import { prettifyTitle } from "@/utils/prettifyTitle";
+import { prettifyCurrency, prettifyTitle } from "@/utils/prettify";
 import { useRef } from "react";
+import { useBalance, useUsername } from "@/stores/user";
+import { useSelector } from "react-redux";
+import CoinIcon from "~assets/icons/coin";
 
 export default function Nav(props) {
   const location = useLocation();
   const navRef = useRef(null);
+  const balance = useSelector(useBalance);
+  const username = useSelector(useUsername);
 
   const dropdownItems = routes
     .filter(
@@ -30,6 +35,14 @@ export default function Nav(props) {
         >
           {prettifyTitle(location.pathname)}
         </Dropdown>
+        {username ? (
+          <S.balance>
+            balance: <span>{prettifyCurrency(balance)}</span>
+            <CoinIcon />
+          </S.balance>
+        ) : (
+          <></>
+        )}
       </S.container>
     </S.nav>
   );

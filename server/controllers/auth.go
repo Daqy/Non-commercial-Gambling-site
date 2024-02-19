@@ -81,3 +81,13 @@ func AuthenticateToken(c *gin.Context) {
 
 	c.Set("user", User{ID: claims.ID, Username: claims.Username, Token: token.Token})
 }
+
+func HandleAuth(c *gin.Context) {
+	_, err := getUserFromRequest(c)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Failed get user information.")
+		return
+	}
+
+	c.Status(http.StatusOK)
+}

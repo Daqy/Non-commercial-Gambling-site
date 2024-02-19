@@ -3,6 +3,7 @@ import styled from "styled-components";
 export const container = styled.div`
   max-width: 1000px;
   margin: 0 auto;
+  padding: 0 1rem;
 `;
 
 export const main = styled.main`
@@ -10,4 +11,16 @@ export const main = styled.main`
   background: var(--color-card-background);
   width: 100%;
   border-radius: 10px;
+`;
+
+export const header = styled.header``;
+export const footer = styled.footer`
+  display: flex;
+  justify-content: space-between;
+  padding: 2rem 2rem;
+  align-items: center;
+`;
+
+export const copyright = styled.p`
+  margin-left: auto;
 `;

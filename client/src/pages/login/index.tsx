@@ -5,15 +5,16 @@ import AppButton from "~components/button";
 import axios from "axios";
 import { useValidation } from "@/utils/validation";
 import { useNavigate } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch } from "react-redux";
 import { setToken } from "~store/auth";
+import { updateUsername, updateBalance } from "~store/user";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  // const { get, data } = useApi();
   const form = useValidation({
     email: {
       $value: email,
@@ -41,21 +42,28 @@ export default function Login() {
     },
   });
 
-  const login = async (e) => {
+  const login = (e) => {
     e.preventDefault();
     if (form.$anyInvalids) {
       form.$touch();
       return;
     }
+    setLoading(true);
 
-    await axios
+    axios
       .post("/auth/login", {
         username: email,
         password: password,
       })
-      .then((response) => {
-        dispatch(setToken(response.data.Token));
-        navigate("/minesweeper");
+      .then(async (response) => {
+        await dispatch(setToken(response.data.Token));
+
+        axios.get("/api/get-user").then(async (response) => {
+          await dispatch(updateUsername(response.data.username));
+          await dispatch(updateBalance(response.data.balance));
+          setLoading(false);
+          navigate("/minesweeper");
+        });
       });
   };
 
@@ -83,7 +91,9 @@ export default function Login() {
             placeholder="Enter your password..."
             type="password"
           />
-          <AppButton type="submit">login</AppButton>
+          <AppButton type="submit" loading={loading}>
+            login
+          </AppButton>
           <S.register>
             Don't have an account? <a href="/register">Sign up</a>
           </S.register>
