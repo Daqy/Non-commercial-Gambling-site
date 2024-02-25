@@ -37,7 +37,8 @@ export default function Nav(props) {
         </Dropdown>
         {username ? (
           <S.balance>
-            balance: <span>{prettifyCurrency(balance)}</span>
+            <S.balanceText>balance: </S.balanceText>
+            <S.balanceValue>{prettifyCurrency(balance)}</S.balanceValue>
             <CoinIcon />
           </S.balance>
         ) : (

@@ -3,11 +3,11 @@ package controllers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"server/database"
 	"server/shared"
 	"server/utils"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -106,7 +106,7 @@ func GetLatestGame(c *gin.Context) {
 		return
 	}
 
-	latestGame := games[0]
+	latestGame := games[len(games)-1]
 
 	if latestGame.State == "ongoing" {
 		latestGame.Bomb.Position = nil
@@ -196,7 +196,21 @@ func CreateGame(c *gin.Context) {
 		return
 	}
 
+	userQuery := database.User{ID: &user.ID}
+	var userR database.User
+
+	if err := database.FindUser(userQuery, &userR); err != nil {
+		c.String(http.StatusBadRequest, "Unable to find user from token")
+		return
+	}
+
+	database.UpdateUserBalance(userQuery, userR.Balance-float64(gameInfo.Stake))
+
 	c.JSON(http.StatusCreated, gameModified)
+}
+
+type ClickPosition struct {
+	ClickPosition int
 }
 
 func GameClick(c *gin.Context) {
@@ -219,19 +233,15 @@ func GameClick(c *gin.Context) {
 		return
 	}
 
-	ClickPositionString, exist := c.Get("clickPosition")
+	// ClickPositionString, exist := c.Get("clickPosition")
+	var requestInfo ClickPosition
 
-	if !exist {
-		c.String(http.StatusBadRequest, "Failed to pass in click position.")
+	if err := json.NewDecoder(c.Request.Body).Decode(&requestInfo); err != nil {
+		c.String(http.StatusBadRequest, "Invalid format of body.")
 		return
 	}
 
-	clickPosition, err := strconv.Atoi(ClickPositionString.(string))
-
-	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
-	}
+	clickPosition := requestInfo.ClickPosition
 
 	objID, err := primitive.ObjectIDFromHex(gameid)
 	if err != nil {
@@ -263,8 +273,7 @@ func GameClick(c *gin.Context) {
 	}
 
 	chanceOfWinning := utils.GetPercentageOfWinningGame(25, len(game.Clicks)+1, game.Bomb.Count)
-
-	pool := float64((1 / chanceOfWinning) * game.Stake)
+	pool := (1.0 / chanceOfWinning) * float64(game.Stake)
 	earned := pool - game.Pool
 
 	clicks := append(game.Clicks, shared.Click{
@@ -277,6 +286,11 @@ func GameClick(c *gin.Context) {
 	// Game lost (bomb clicked)
 	if utils.ValueInArray(game.Bomb.Position, clickPosition) {
 		database.UpdateState(MinesweeperGameWithOutBomb{ID: objID, GameType: "minesweeper"}, "done")
+		queryGame := MinesweeperGameWithOutBomb{ID: objID, GameType: "minesweeper"}
+		if err := database.FindGame(queryGame, &game); err != nil {
+			c.String(http.StatusBadRequest, "Failed to find game")
+			return
+		}
 		c.JSON(http.StatusOK, game)
 		return
 	}
@@ -285,6 +299,7 @@ func GameClick(c *gin.Context) {
 
 	// Game Won
 	// 25 = default board size (won't have the option of changing it rn)
+	fmt.Println(len(game.Clicks)+1, 25-game.Bomb.Count)
 	if len(game.Clicks)+1 == 25-game.Bomb.Count {
 		database.UpdateState(MinesweeperGameWithOutBomb{ID: objID, GameType: "minesweeper"}, "done")
 
@@ -297,6 +312,11 @@ func GameClick(c *gin.Context) {
 		}
 
 		database.UpdateUserBalance(query, result.Balance+earned)
+		queryGame := MinesweeperGameWithOutBomb{ID: objID, GameType: "minesweeper"}
+		if err := database.FindGame(queryGame, &game); err != nil {
+			c.String(http.StatusBadRequest, "Failed to find game")
+			return
+		}
 		c.JSON(http.StatusOK, game)
 		return
 	}
@@ -310,6 +330,60 @@ func GameClick(c *gin.Context) {
 
 	if game.State == "ongoing" {
 		game.Bomb.Position = nil
+	}
+
+	c.JSON(http.StatusOK, game)
+}
+
+func ClaimGame(c *gin.Context) {
+	user, err := getUserFromRequest(c)
+
+	if err != nil {
+		c.String(http.StatusBadRequest, "Failed get user information.")
+		return
+	}
+
+	gameid := c.Param("id")
+
+	if gameid == "" {
+		c.String(http.StatusBadRequest, "Game id is required for this request.")
+		return
+	}
+
+	if len(gameid) != 24 {
+		c.String(http.StatusBadRequest, "ID must be provided.")
+		return
+	}
+
+	objID, err := primitive.ObjectIDFromHex(gameid)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	gameQuery := MinesweeperGameWithOutBomb{ID: objID, GameType: "minesweeper"}
+	var game MinesweeperGame
+
+	if err := database.FindGame(gameQuery, &game); err != nil {
+		c.String(http.StatusBadRequest, "Failed to find game")
+		return
+	}
+
+	database.UpdateState(MinesweeperGameWithOutBomb{ID: objID, GameType: "minesweeper"}, "done")
+
+	query := database.User{ID: &user.ID}
+	var result database.User
+
+	if err := database.FindUser(query, &result); err != nil {
+		c.String(http.StatusBadRequest, "Unable to find user from token")
+		return
+	}
+
+	database.UpdateUserBalance(query, result.Balance+game.Pool)
+
+	if err := database.FindGame(gameQuery, &game); err != nil {
+		c.String(http.StatusBadRequest, "Failed to find game")
+		return
 	}
 
 	c.JSON(http.StatusOK, game)

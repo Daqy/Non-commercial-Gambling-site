@@ -28,7 +28,7 @@ export const input = styled.input`
 
   ${(props) =>
     props.theme.error
-      ? "border: 2px solid var(--color-error)"
+      ? "border: 2px solid var(--color-error) !important"
       : "border: 2px solid white"}
 `;
 

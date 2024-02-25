@@ -26,7 +26,7 @@ export default function Login() {
       },
       emailFormatIsCorrect: {
         $validator: (value: string) => {
-          return !value.includes("@");
+          return true;
         },
         $message: "@ must be included in email",
       },

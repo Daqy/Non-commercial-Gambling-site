@@ -19,6 +19,7 @@ export const footer = styled.footer`
   justify-content: space-between;
   padding: 2rem 2rem;
   align-items: center;
+  /* flex-direction: ; */
 `;
 
 export const copyright = styled.p`

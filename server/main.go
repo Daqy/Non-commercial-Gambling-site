@@ -39,6 +39,7 @@ func main() {
 	minesweeper.GET("/:id", controllers.AuthenticateToken, controllers.GetGame)
 	minesweeper.GET("/latest-game", controllers.AuthenticateToken, controllers.GetLatestGame)
 	minesweeper.POST("/create", controllers.AuthenticateToken, controllers.CreateGame)
+	minesweeper.POST("/:id/claim", controllers.AuthenticateToken, controllers.ClaimGame)
 	minesweeper.POST("/:id/click", controllers.AuthenticateToken, controllers.GameClick)
 
 	router.Run(":3000")

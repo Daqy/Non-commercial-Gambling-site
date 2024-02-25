@@ -1,14 +1,16 @@
 package utils
 
-import "server/shared"
+import (
+	"server/shared"
+)
 
 func GenerateBombPosition(bombCount int) []int {
 	var positions []int
 	for iteration := 0; iteration < bombCount; iteration++ {
-		position := RandomNumberGenerator(1, 25)
+		position := RandomNumberGenerator(1, 26)
 
 		for ValueInArray(positions, position) {
-			position = RandomNumberGenerator(1, 25)
+			position = RandomNumberGenerator(1, 26)
 		}
 
 		positions = append(positions, position)
@@ -16,11 +18,13 @@ func GenerateBombPosition(bombCount int) []int {
 	return positions
 }
 
-func GetPercentageOfWinningGame(size int, nextClickCount int, bombCount int) int {
-	total := 1
+func GetPercentageOfWinningGame(size int, nextClickCount int, bombCount int) float64 {
+	var total float64
+	total = 1
 
 	for iteration := 0; iteration < nextClickCount; iteration++ {
-		total = total * (size - bombCount - iteration) / (size - iteration)
+		calc := float64(size-bombCount-iteration) / float64(size-iteration)
+		total = total * calc
 	}
 
 	return total

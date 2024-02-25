@@ -1,3 +1,4 @@
+import { queries } from "@/utils/mediaQueries";
 import styled from "styled-components";
 
 export const nav = styled.nav`
@@ -22,18 +23,26 @@ export const container = styled.div`
 const svgHeight = "2rem";
 
 export const balance = styled.p`
-  text-transform: uppercase;
-  color: var(--color-text-main);
-  display: flex;
   align-items: center;
-
-  > span {
-    margin: 0 0.5rem;
-    color: var(--color-important-text);
-  }
+  display: flex;
 
   > svg {
     width: ${svgHeight};
     height: ${svgHeight};
   }
+`;
+
+export const balanceText = styled.span`
+  text-transform: uppercase;
+  color: var(--color-text-main);
+  display: none;
+
+  @media (min-width: ${queries.tablet}) {
+    display: flex;
+  }
+`;
+
+export const balanceValue = styled.span`
+  margin: 0 0.5rem;
+  color: var(--color-important-text);
 `;

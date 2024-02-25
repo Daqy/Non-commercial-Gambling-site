@@ -9,6 +9,13 @@ const themes = {
     main: `color: var(--color-text-main);`,
     hover: `cursor: pointer; text-decoration: underline;`,
   },
+  subtle: {
+    main: `background: var(--color-card-subtle); color: var(--color-text-main); box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px; width: 100%; border-radius: 10px;`,
+  },
+  secondary: {
+    main: `border: 2px solid var(--color-orange); color: var(--color-orange); box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px; width: 100%; border-radius: 10px;`,
+    hover: `cursor: pointer; background: var(--color-orange); color: var(--color-orange-text);`,
+  },
 };
 
 export type Themes = keyof typeof themes;
@@ -24,7 +31,7 @@ export const button = styled.button<{ $theme: Themes }>`
   justify-content: center;
   ${(props) => themes[props.$theme].main}
 
-  &:hover {
+  &:not(:disabled):hover {
     cursor: pointer;
     ${(props) => themes[props.$theme].hover}
   }

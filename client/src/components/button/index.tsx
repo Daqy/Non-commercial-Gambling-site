@@ -6,14 +6,16 @@ export default function Button({
   children,
   theme = "primary",
   loading = false,
+  disabled = false,
   ...atr
 }: {
   children: string;
-  theme: S.Themes;
-  loading: boolean;
+  theme?: S.Themes;
+  loading?: boolean;
+  disabled?: boolean;
 }) {
   return (
-    <S.button {...atr} $theme={theme}>
+    <S.button {...atr} $theme={theme} disabled={disabled}>
       {children}
       {loading ? <Icon icon={customIcons.loading} /> : <></>}
     </S.button>

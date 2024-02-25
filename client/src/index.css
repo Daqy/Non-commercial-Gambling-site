@@ -10,6 +10,12 @@
   --color-highlight-primary-hover: #139c23;
   --color-hightlight-secondary-green: #009638;
   --color-error: #ff3355;
+  --color-sweeper-dark: #151e2d;
+  --color-sweeper-light: #1a2332;
+  --color-info-svg: #273245;
+  --color-bomb-background: #d81239;
+  --color-orange: #ffcf02;
+  --color-orange-text: #b86900;
 }
 
 *,

@@ -4,4 +4,5 @@ export default {
   minesweeper: "fa-solid:bomb",
   loading: "mingcute:loading-line",
   "game history": "material-symbols:history",
+  click: "mingcute:cursor-3-fill",
 };
