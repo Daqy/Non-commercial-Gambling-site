@@ -1,4 +1,5 @@
 export const tileFlip = (game, id: number) => {
+  if (!game) return false;
   if (Object.keys(game).length === 0) return false;
   if (!game.clicks) return false;
 
@@ -10,6 +11,7 @@ export const tileFlip = (game, id: number) => {
 };
 
 export const isBombTile = (game, id: number) => {
+  if (!game) return false;
   if (Object.keys(game).length === 0) return false;
   if (!game.bomb.position) return false;
 
@@ -20,6 +22,7 @@ export const isBombTile = (game, id: number) => {
 };
 
 export const getEarned = (game, id: number) => {
+  if (!game) return false;
   if (Object.keys(game).length === 0) return false;
   if (!game.clicks) return false;
 
@@ -31,6 +34,7 @@ export const getEarned = (game, id: number) => {
 };
 
 export const isWinningState = (game) => {
+  if (!game) return false;
   if (Object.keys(game).length === 0) return false;
   if (!game.clicks) return false;
   if (!game.bomb.position) return false;

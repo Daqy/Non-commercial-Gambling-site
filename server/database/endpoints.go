@@ -24,21 +24,21 @@ func findOne[Q any, R any](collectionName string, query Q, result *R) error {
 	return nil
 }
 
-func findMany[Q any, R any](collectionName string, query Q, result *R) ([]R, error) {
+func findMany[Q any, R any](collectionName string, query Q, result *R) (R, error) {
 	collection := db.Collection(collectionName)
 	filter, _ := bson.Marshal(query)
 
+	fmt.Println(query)
 	cursor, err := collection.Find(context.TODO(), filter)
+	var results R
 
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			fmt.Printf("No documents were found.")
-			return nil, err
+			return results, err
 		}
 		panic(err)
 	}
-	var results []R
-
 	if err = cursor.All(context.TODO(), &results); err != nil {
 		panic(err)
 	}

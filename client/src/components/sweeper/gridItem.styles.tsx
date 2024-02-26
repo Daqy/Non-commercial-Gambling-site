@@ -3,7 +3,7 @@ import styled from "styled-components";
 export const gridItem = styled.div`
   /* width: 100%;
   height: 100%; */
-  flex: 0 1 calc(20% - 0.4rem);
+  /* flex: 0 1 calc(20% - 0.4rem); */
   aspect-ratio: 1/1;
   position: relative;
   border-radius: 5px;

@@ -4,6 +4,7 @@ import CashTile from "./tiles/cash";
 
 export default function GridItem({
   isBomb = false,
+  hide = false,
   flip = false,
   earn,
   hasWon,
@@ -20,7 +21,7 @@ export default function GridItem({
           isBomb ? (
             <BombTile hasWon={hasWon} />
           ) : (
-            <CashTile earn={earn} />
+            <CashTile earn={earn} hide={hide} />
           )
         ) : (
           <></>

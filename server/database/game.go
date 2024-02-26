@@ -15,7 +15,7 @@ func FindGame[Q any, R any](query Q, result *R) error {
 	return findOne("games", query, result)
 }
 
-func FindGames[Q any, R any](query Q, result *R) ([]R, error) {
+func FindGames[Q any, R any](query Q, result *R) (R, error) {
 	return findMany("games", query, result)
 }
 

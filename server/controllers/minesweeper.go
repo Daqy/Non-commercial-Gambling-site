@@ -93,7 +93,7 @@ func GetLatestGame(c *gin.Context) {
 	}
 
 	query := MinesweeperGameWithOutBomb{BelongsTo: user.ID, GameType: "minesweeper"}
-	var result MinesweeperGame
+	var result []MinesweeperGame
 
 	games, err := database.FindGames(query, &result)
 	if err != nil {
@@ -116,8 +116,8 @@ func GetLatestGame(c *gin.Context) {
 }
 
 func getMinesweeperHistory(user User) ([]MinesweeperGame, error) {
-	query := MinesweeperGame{BelongsTo: user.ID, GameType: "minesweeper", State: "done"}
-	var result MinesweeperGame
+	query := MinesweeperGameWithOutBomb{BelongsTo: user.ID, GameType: "minesweeper", State: "done"}
+	var result []MinesweeperGame
 
 	games, err := database.FindGames(query, &result)
 
@@ -127,6 +127,10 @@ func getMinesweeperHistory(user User) ([]MinesweeperGame, error) {
 
 	if len(games) == 0 {
 		return nil, errors.New("No games found")
+	}
+
+	if len(games) > 50 {
+		games = games[len(games)-51 : len(games)-1]
 	}
 
 	return games, nil
@@ -163,7 +167,7 @@ func CreateGame(c *gin.Context) {
 	}
 
 	query := MinesweeperGameWithOutBomb{BelongsTo: user.ID, GameType: "minesweeper", State: "ongoing"}
-	var result MinesweeperGame
+	var result []MinesweeperGame
 
 	games, err := database.FindGames(query, &result)
 
