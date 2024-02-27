@@ -4,6 +4,23 @@ Just bet is a non commercial gambling website for user enjoyment. Just-bet has t
 
 > _Recreated a previous website I made in `old-website` branch_
 
+`./just-bet-vue`: uses Vue and Nodejs.
+
+- Pages:
+  - login
+  - register
+  - minesweeper
+  - history
+  - battleships
+
+`./just-bet-react`: uses React and Golang.
+
+- Pages:
+  - login
+  - register
+  - minesweeper
+  - history
+
 ## Preview
 
 <img src='screenshots/minesweeper-play.png' />
