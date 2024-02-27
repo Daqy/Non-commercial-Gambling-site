@@ -48,7 +48,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	query := database.User{Username: credentials.Username, Email: credentials.Email}
+	query := database.User{Email: credentials.Email}
 	var user database.User
 
 	if err := database.FindUser(query, &user); err != nil {
